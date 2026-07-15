@@ -11,14 +11,20 @@
   <header class="hv-top">
     <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
       <span class="hv-titel"><a href="/{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Håven</a></span>
+      {% set p = request.url.path %}
+      {% macro navlank(mal, text, nuv) %}
+        <a href="{{ mal }}{% if vald %}?fil={{ vald|urlencode }}{% endif %}"
+           class="{{ 'aktiv' if nuv == mal else '' }}"
+           {% if nuv == mal %}aria-current="page"{% endif %}>{{ text }}</a>
+      {% endmacro %}
       <nav>
-        <a href="/status{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Status</a>
-        <a href="/ko{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Arbetskö</a>
-        <a href="/underlag{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Underlag</a>
-        <a href="/avstamning{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Avstämning</a>
-        <a href="/justeringar{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Justeringar</a>
-        <a href="/omatchade{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Omatchade</a>
-        <a href="/konfig{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Konfig</a>
+        {{ navlank("/status", "Status", p) }}
+        {{ navlank("/ko", "Arbetskö", p) }}
+        {{ navlank("/underlag", "Underlag", p) }}
+        {{ navlank("/avstamning", "Avstämning", p) }}
+        {{ navlank("/justeringar", "Justeringar", p) }}
+        {{ navlank("/omatchade", "Omatchade", p) }}
+        {{ navlank("/konfig", "Konfig", p) }}
       </nav>
     </div>
   </header>

@@ -22,6 +22,7 @@
     <span class="hv-belopp">{{ g.summa|kr }} kr</span>
   </header>
   <table>
+    <thead><tr><th>Församling</th><th style="text-align:right">Belopp</th></tr></thead>
     <tbody>
       {% for d in g.delposter %}
       <tr><td>{{ d.forsamling }}</td><td style="text-align:right">{{ d.belopp|kr }}</td></tr>

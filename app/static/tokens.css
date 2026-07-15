@@ -44,8 +44,14 @@ header.hv-top {
 }
 header.hv-top a { color: var(--hv-accent-kontrast); }
 header.hv-top .hv-titel { font-weight: 700; font-size: 1.05rem; }
+header.hv-top nav { flex-wrap: wrap; }
 header.hv-top nav a { margin-left: 0.9rem; text-decoration: none; opacity: 0.9; }
 header.hv-top nav a:hover { opacity: 1; text-decoration: underline; }
+header.hv-top nav a.aktiv { opacity: 1; text-decoration: underline; font-weight: 700; }
+
+/* Tabeller ska scrolla i egen container, inte trycka ut sidan pa mobil */
+figure { overflow-x: auto; }
+.hv-post table { display: block; overflow-x: auto; }
 
 main.container { padding-block: 1rem; }
 h1 { font-size: 1.4rem; }
@@ -76,7 +82,11 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-badge {
   display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
   font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+  white-space: nowrap;
 }
+.hv-diff-varning { color: var(--hv-varning); font-weight: 700; }
+/* Badges som anvands som hela meddelanden (block-p) ska fa radbryta */
+p.hv-badge { white-space: normal; }
 .hv-badge.klar { background: var(--hv-ok-bg); color: var(--hv-ok); }
 .hv-badge.varning { background: var(--hv-varning-bg); color: var(--hv-varning); }
 
@@ -153,6 +163,11 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
   border-radius: var(--pico-border-radius);
 }
 .hv-statuskort strong.hv-badge { font-size: 1rem; }
+
+/* Klickbar rad i radvalstabellerna (storre tumzon an bara kryssrutan) */
+.hv-radtabell tr.hv-rad { cursor: pointer; }
+.hv-radtabell tr.hv-rad:hover { background: var(--hv-vantar-bg); }
+.hv-radtabell .hv-valj { transform: scale(1.25); }
 
 .hv-tx-grupp { margin-top: 0.6rem; }
 .hv-tx-grupprubrik { margin: 0 0 0.2rem; font-size: 0.85rem; }

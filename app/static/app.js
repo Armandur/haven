@@ -33,6 +33,17 @@
     });
   }
 
+  function uppdateraFlikar() {
+    var par = [["koll-klara", ".hv-panel-koll"], ["gava-klara", ".hv-panel-gava"]];
+    par.forEach(function (p) {
+      var span = document.querySelector('[data-roll="' + p[0] + '"]');
+      var panel = document.querySelector(p[1]);
+      if (span && panel) {
+        span.textContent = panel.querySelectorAll(".hv-post.hv-klar").length;
+      }
+    });
+  }
+
   function sattTillstand(post, bekraftad) {
     post.classList.toggle("hv-klar", bekraftad);
     var bekr = post.querySelector('[data-roll="bekrafta-form"]');
@@ -55,6 +66,7 @@
     postForm(form).then(function (data) {
       sattTillstand(post, data.bekraftad);
       uppdateraProgress(data.klara, data.totalt);
+      uppdateraFlikar();
       markeraAktuell();
       if (data.bekraftad) {
         var next = document.querySelector(".hv-post.hv-aktuell");
@@ -112,20 +124,27 @@
       if (e.target.classList.contains("hv-valj")) uppdatera();
     });
 
-    // Skift+klick markerar intervallet av synliga rader mellan senaste och nuvarande.
+    // Hela raden ar klickbar (storre tumzon). Skift+klick markerar intervallet
+    // av synliga rader mellan senaste och nuvarande.
     var sistaIdx = null;
     table.addEventListener("click", function (e) {
-      var cb = e.target;
-      if (!cb.classList || !cb.classList.contains("hv-valj")) return;
-      var idx = rows.indexOf(cb.closest("tr"));
+      var tr = e.target.closest("tr.hv-rad");
+      if (!tr) return;
+      var cb = tr.querySelector(".hv-valj");
+      if (!cb) return;
+      var idx = rows.indexOf(tr);
+      // Klick pa sjalva kryssrutan har redan togglat den; radklick togglar manuellt.
+      if (e.target !== cb) {
+        cb.checked = !cb.checked;
+      }
       if (e.shiftKey && sistaIdx !== null && idx !== -1) {
         var lo = Math.min(sistaIdx, idx), hi = Math.max(sistaIdx, idx);
         for (var i = lo; i <= hi; i++) {
           if (!rows[i].hidden) rows[i].querySelector(".hv-valj").checked = cb.checked;
         }
-        uppdatera();
       }
       sistaIdx = idx;
+      uppdatera();
     });
     if (allC) allC.addEventListener("change", function () {
       rows.forEach(function (r) {

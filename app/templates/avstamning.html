@@ -48,7 +48,7 @@
         </td>
         <td style="text-align:right">{{ r.swish|kr }}</td>
         <td style="text-align:right">{{ r.kob|kr }}</td>
-        <td style="text-align:right">{% if r.diff != 0 %}<strong>{{ r.diff|kr }}</strong>{% else %}0,00{% endif %}</td>
+        <td style="text-align:right">{% if r.diff != 0 %}<span class="hv-diff-varning">{{ r.diff|kr }}</span>{% else %}0,00{% endif %}</td>
         <td>
           {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
           {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">notis</span>

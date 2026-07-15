@@ -196,12 +196,20 @@ class KoVy:
         return len(self.poster)
 
     @property
-    def nasta(self) -> Kopost | None:
-        return next((p for p in self.poster if not p.bekraftad), None)
-
-    @property
     def kollekt_sekvens(self) -> list[Sekvenspost]:
         return bygg_kollekt_sekvens(self.poster)
+
+    @property
+    def visningsordning(self) -> list[Kopost]:
+        """Posterna i exakt den ordning arbetskon visar dem (kollekt sedan gava),
+        sa att 'nasta' pekar pa det kort anvandaren faktiskt ser forst."""
+        ordning = [s.post for s in self.kollekt_sekvens if s.typ in ("post", "rs")]
+        ordning.extend(self.gava_poster)
+        return ordning
+
+    @property
+    def nasta(self) -> Kopost | None:
+        return next((p for p in self.visningsordning if not p.bekraftad), None)
 
     @property
     def gava_poster(self) -> list[Kopost]:
@@ -214,6 +222,14 @@ class KoVy:
     @property
     def gava_antal(self) -> int:
         return sum(1 for p in self.poster if p.grupp == "Gåva")
+
+    @property
+    def kollekt_klara(self) -> int:
+        return sum(1 for p in self.poster if p.grupp in ("F", "R/S") and p.bekraftad)
+
+    @property
+    def gava_klara(self) -> int:
+        return sum(1 for p in self.poster if p.grupp == "Gåva" and p.bekraftad)
 
 
 def standard_rapportfil() -> Path | None:

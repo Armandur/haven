@@ -103,8 +103,8 @@
   <input type="radio" name="kotab" id="tab-koll" checked>
   <input type="radio" name="kotab" id="tab-gava">
   <div class="hv-tabbar">
-    <label for="tab-koll">Kollekter <span class="hv-tabnr">{{ vy.kollekt_antal }}</span></label>
-    <label for="tab-gava">Insamlingar/Gåvor <span class="hv-tabnr">{{ vy.gava_antal }}</span></label>
+    <label for="tab-koll">Kollekter <span class="hv-tabnr"><span data-roll="koll-klara">{{ vy.kollekt_klara }}</span>/{{ vy.kollekt_antal }}</span></label>
+    <label for="tab-gava">Insamlingar/Gåvor <span class="hv-tabnr"><span data-roll="gava-klara">{{ vy.gava_klara }}</span>/{{ vy.gava_antal }}</span></label>
   </div>
 
   <div class="hv-panel hv-panel-koll">

@@ -70,7 +70,7 @@ oförändrad (Excel-filen är sanningskälla). Ändringar slår igenom direkt.</
       <form method="post" action="/konfig/forsamling/alias{{ q }}">
         <td>{{ f.kanoniskt }}<input type="hidden" name="kanoniskt" value="{{ f.kanoniskt }}"></td>
         <td>{{ f.kortkod }}</td>
-        <td><input type="text" name="alias" value="{{ f.alias|join(', ') }}" style="margin:0;"></td>
+        <td><textarea name="alias" rows="2" style="margin:0;min-width:14rem;">{{ f.alias|join(', ') }}</textarea></td>
         <td><button type="submit" style="margin:0;padding:0.3rem 0.7rem;">Spara</button></td>
       </form>
     </tr>
