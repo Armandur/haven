@@ -150,3 +150,29 @@ def test_sarskild_post_invariant():
     allman = next(p for p in u.gava_manad if p.verksamhet == "ACT Svenska Kyrkan")
     assert allman.belopp + sarpost.belopp == _d("6656.00")
     assert sarpost.belopp > 0
+
+
+def test_db_roundtrip_overstyrning(tmp_path, monkeypatch):
+    """Låser skapa -> läs-seamen (sträng<->Kollekttyp/date) via en temp-DB."""
+    from datetime import date
+    from sqlalchemy import create_engine
+    from app.config import Kollekttyp
+    from app.core.pipeline import kor_pipeline
+    import app.database as db
+
+    eng = create_engine(f"sqlite:///{tmp_path / 't.db'}", future=True)
+    monkeypatch.setattr(db, "engine", eng)
+    db.Base.metadata.create_all(eng)
+
+    db.skapa_overstyrning(
+        "2026-05", "Stigsjö församling", "Musikverksamheten i Stigsjö församling",
+        ny_typ="F", ny_tillfallesdatum="2026-05-23",
+        datum_fran="2026-05-23", datum_till="2026-05-23")
+    ov = db.las_overstyrningar("2026-05")
+    assert len(ov) == 1
+    assert ov[0].ny_typ == Kollekttyp.F
+    assert ov[0].ny_tillfallesdatum == date(2026, 5, 23)
+
+    res = kor_pipeline(SWISH, overstyrningar=ov)
+    avst = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
+    assert avst.antal_diffar == 0
