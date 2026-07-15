@@ -107,6 +107,47 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-badge.typ-r { background: var(--hv-typ-r-bg); color: var(--hv-typ-r); }
 .hv-badge.typ-gava { background: var(--hv-typ-gava-bg); color: var(--hv-typ-gava); }
 
+/* Flikar pa arbetskon (ren CSS, ingen JS) */
+.hv-tabs input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+.hv-tabbar {
+  display: flex; gap: 0.25rem; flex-wrap: wrap;
+  border-bottom: 2px solid var(--pico-muted-border-color); margin-bottom: 1rem;
+}
+.hv-tabbar label {
+  padding: 0.5rem 1rem; cursor: pointer; font-weight: 600;
+  color: var(--pico-muted-color); border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.hv-tabbar label:hover { color: var(--pico-color); }
+#tab-koll:checked ~ .hv-tabbar label[for="tab-koll"],
+#tab-gava:checked ~ .hv-tabbar label[for="tab-gava"] {
+  color: var(--hv-accent); border-bottom-color: var(--hv-accent);
+}
+.hv-tabnr {
+  display: inline-block; font-size: 0.72rem; font-weight: 700;
+  background: var(--pico-muted-border-color); color: var(--pico-color);
+  border-radius: 999px; padding: 0 0.45rem; margin-left: 0.15rem;
+}
+.hv-panel { display: none; }
+#tab-koll:checked ~ .hv-panel-koll,
+#tab-gava:checked ~ .hv-panel-gava { display: block; }
+
+/* Forsamlingsrubrik i kollektsekvensen */
+.hv-forsrubrik {
+  font-size: 1.05rem; margin: 1.3rem 0 0.6rem; padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+/* Break-in-kort for riks-/stiftskollekter */
+.hv-post.hv-breakin { margin-left: 0.75rem; border-left-width: 5px; background: var(--pico-card-sectioning-background-color); }
+.hv-post.typ-kant-r { border-left-color: var(--hv-typ-r); }
+.hv-post.typ-kant-s { border-left-color: var(--hv-typ-s); }
+.hv-post.typ-kant-f { border-left-color: var(--hv-typ-f); }
+.hv-breakin-mark {
+  display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--pico-muted-color);
+  border: 1px dashed var(--pico-muted-border-color); border-radius: 4px; padding: 0 0.35rem;
+}
+
 .hv-post details.hv-tx { margin-top: 0.5rem; }
 .hv-post details.hv-tx summary {
   cursor: pointer; font-size: 0.85rem; color: var(--hv-accent); font-weight: 600;

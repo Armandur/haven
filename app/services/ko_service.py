@@ -127,6 +127,56 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
 
 
 @dataclass
+class Sekvenspost:
+    """Ett element i kollektsekvensen: forsamlingsrubrik, F-post eller R/S-break-in."""
+    typ: str                         # "rubrik" | "post" | "rs"
+    forsamling: str | None = None
+    post: Kopost | None = None
+
+
+def bygg_kollekt_sekvens(poster: list[Kopost]) -> list[Sekvenspost]:
+    """Kollekter ordnade per forsamling; R/S-tillfallen bryter in kronologiskt.
+
+    F-posterna grupperas under forsamlingsrubriker (i datumordning inom varje).
+    R/S-tillfallena skjuts in en gang var, pa sin datumposition, och rubriken
+    aterupprepas efter en break-in sa floden blir tydligt.
+    """
+    f_poster = [p for p in poster if p.grupp == "F"]
+    rs_poster = sorted((p for p in poster if p.grupp == "R/S"),
+                       key=lambda p: (p.datum, p.typ_kod))
+
+    # Ordna forsamlingar efter deras tidigaste tillfalle sa att break-ins landar
+    # kronologiskt naturligt (forsamlingen med tidigast kollekt kommer forst).
+    min_datum: dict[str, object] = {}
+    for p in f_poster:
+        if p.forsamling not in min_datum or p.datum < min_datum[p.forsamling]:
+            min_datum[p.forsamling] = p.datum
+    f_poster.sort(key=lambda p: (min_datum[p.forsamling], p.forsamling, p.datum))
+
+    per_fors: dict[str, list[Kopost]] = {}
+    for p in f_poster:
+        per_fors.setdefault(p.forsamling, []).append(p)
+
+    sekvens: list[Sekvenspost] = []
+    rs_i = 0
+    for fors, fposts in per_fors.items():
+        rubrik_satt = False
+        for post in fposts:
+            while rs_i < len(rs_poster) and rs_poster[rs_i].datum <= post.datum:
+                sekvens.append(Sekvenspost("rs", post=rs_poster[rs_i]))
+                rs_i += 1
+                rubrik_satt = False
+            if not rubrik_satt:
+                sekvens.append(Sekvenspost("rubrik", forsamling=fors))
+                rubrik_satt = True
+            sekvens.append(Sekvenspost("post", post=post))
+    while rs_i < len(rs_poster):
+        sekvens.append(Sekvenspost("rs", post=rs_poster[rs_i]))
+        rs_i += 1
+    return sekvens
+
+
+@dataclass
 class KoVy:
     resultat: Pipelineresultat
     poster: list[Kopost]
@@ -142,6 +192,22 @@ class KoVy:
     @property
     def nasta(self) -> Kopost | None:
         return next((p for p in self.poster if not p.bekraftad), None)
+
+    @property
+    def kollekt_sekvens(self) -> list[Sekvenspost]:
+        return bygg_kollekt_sekvens(self.poster)
+
+    @property
+    def gava_poster(self) -> list[Kopost]:
+        return [p for p in self.poster if p.grupp == "Gåva"]
+
+    @property
+    def kollekt_antal(self) -> int:
+        return sum(1 for p in self.poster if p.grupp in ("F", "R/S"))
+
+    @property
+    def gava_antal(self) -> int:
+        return sum(1 for p in self.poster if p.grupp == "Gåva")
 
 
 def standard_rapportfil() -> Path | None:
