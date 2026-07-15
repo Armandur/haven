@@ -1,0 +1,88 @@
+/* Identitetslager ovanpa Pico: accent, statusfarger, tathet. Mobil-forst. */
+:root {
+  font-size: 100%;                 /* las rotstorleken for tata admin-vyer */
+  --hv-accent: #1f6f6b;            /* dampad kyrko-teal */
+  --hv-accent-kontrast: #ffffff;
+  --hv-ok: #2e7d32;
+  --hv-ok-bg: #e6f4ea;
+  --hv-varning: #b26a00;
+  --hv-varning-bg: #fdf1e0;
+  --hv-vantar: #5a6472;
+  --hv-vantar-bg: #eef1f5;
+}
+
+/* Pico v2 definierar temavariabler under :root:not([data-theme=dark]) -
+   samma specificitet kravs for att accenten ska sla igenom pa knappar. */
+:root:not([data-theme=dark]),
+:root[data-theme=light],
+:root[data-theme=dark] {
+  --pico-primary: var(--hv-accent);
+  --pico-primary-hover: #17544f;
+  --pico-primary-focus: rgba(31, 111, 107, 0.3);
+  --pico-primary-background: var(--hv-accent);
+  --pico-primary-hover-background: #17544f;
+  --pico-primary-border: var(--hv-accent);
+  --pico-primary-hover-border: #17544f;
+  --pico-primary-underline: rgba(31, 111, 107, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --hv-ok-bg: #16351f;
+    --hv-varning-bg: #3a2a10;
+    --hv-vantar-bg: #23282f;
+    --hv-vantar: #9aa4b2;
+  }
+}
+
+body { padding-block: 0; }
+
+header.hv-top {
+  background: var(--hv-accent);
+  color: var(--hv-accent-kontrast);
+  padding: 0.6rem 1rem;
+}
+header.hv-top a { color: var(--hv-accent-kontrast); }
+header.hv-top .hv-titel { font-weight: 700; font-size: 1.05rem; }
+header.hv-top nav a { margin-left: 0.9rem; text-decoration: none; opacity: 0.9; }
+header.hv-top nav a:hover { opacity: 1; text-decoration: underline; }
+
+main.container { padding-block: 1rem; }
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.15rem; margin-top: 1.5rem; }
+
+/* Progressrad i arbetskon */
+.hv-progress { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0 1rem; }
+.hv-progress progress { flex: 1; margin: 0; }
+.hv-progress .hv-rakning { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+
+/* Kort per registreringspost */
+.hv-post {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.7rem;
+  border-left: 4px solid var(--hv-vantar);
+}
+.hv-post.hv-aktuell { border-left-color: var(--hv-accent); box-shadow: 0 0 0 2px var(--pico-primary-focus); }
+.hv-post.hv-klar { border-left-color: var(--hv-ok); opacity: 0.75; }
+.hv-post header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin: 0; }
+.hv-post .hv-belopp { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hv-post .hv-meta { color: var(--pico-muted-color); font-size: 0.85rem; }
+.hv-post table { margin: 0.5rem 0 0; font-size: 0.9rem; }
+.hv-post .hv-knappar { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.hv-post .hv-knappar button { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
+
+.hv-badge {
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.hv-badge.f { background: var(--hv-vantar-bg); color: var(--hv-vantar); }
+.hv-badge.rs { background: var(--hv-varning-bg); color: var(--hv-varning); }
+.hv-badge.gava { background: var(--hv-ok-bg); color: var(--hv-ok); }
+.hv-badge.klar { background: var(--hv-ok-bg); color: var(--hv-ok); }
+.hv-badge.varning { background: var(--hv-varning-bg); color: var(--hv-varning); }
+
+.hv-swish { font-size: 0.8rem; color: var(--pico-muted-color); }
+.hv-tomt { color: var(--pico-muted-color); font-style: italic; }
+[hidden] { display: none !important; }

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titel %}Arbetskö{% endblock %}
+{% block content %}
+{% set rap = vy.resultat.rapport %}
+<h1>Arbetskö - {{ rap.period }}</h1>
+<p class="hv-meta">Registrera varje post i KOB och bekräfta. Inbetalningsmetod är alltid <strong>Swish 1</strong>.</p>
+
+<div class="hv-progress" id="hv-progress"
+     data-klara="{{ vy.klara }}" data-totalt="{{ vy.totalt }}">
+  <progress id="hv-progressbar" value="{{ vy.klara }}" max="{{ vy.totalt }}"></progress>
+  <span class="hv-rakning"><span id="hv-klara">{{ vy.klara }}</span> / {{ vy.totalt }} klara</span>
+</div>
+
+{% if not vy.poster %}
+  <p class="hv-tomt">Inga registreringsposter för den här rapporten.</p>
+{% endif %}
+
+{% set nasta = vy.nasta %}
+{% for p in vy.poster %}
+<article class="hv-post {% if p.bekraftad %}hv-klar{% elif nasta and p.nyckel == nasta.nyckel %}hv-aktuell{% endif %}"
+         id="post-{{ loop.index }}" data-nyckel="{{ p.nyckel }}">
+  <header>
+    <div>
+      <span class="hv-badge {% if p.grupp == 'F' %}f{% elif p.grupp == 'R/S' %}rs{% else %}gava{% endif %}">{{ p.typ_etikett }}</span>
+      <strong>{{ p.rubrik }}</strong>
+      <span class="hv-badge klar" data-roll="klarmarke" {% if not p.bekraftad %}hidden{% endif %}>✓ registrerad</span>
+    </div>
+    <span class="hv-belopp">{{ p.belopp|kr }} kr</span>
+  </header>
+
+  <div class="hv-meta">
+    {% if p.andamal %}Ändamål: <strong>{{ p.andamal }}</strong> · {% endif %}
+    {% if p.datum %}Datum: {{ p.datum }} · {% endif %}
+    {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
+    {% if p.kraver_manuell_andamal %}
+      · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>
+    {% endif %}
+  </div>
+
+  {% if p.delposter %}
+  <table>
+    <thead><tr><th>Församling</th><th style="text-align:right">Belopp</th><th style="text-align:right">Tx</th></tr></thead>
+    <tbody>
+      {% for d in p.delposter %}
+      <tr><td>{{ d.forsamling }}</td><td style="text-align:right">{{ d.belopp|kr }}</td><td style="text-align:right">{{ d.antal }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="hv-swish">Registreras på ett gemensamt tillfälle i KOB (alla församlingars belopp).</p>
+  {% endif %}
+
+  <div class="hv-knappar" data-roll="knappar">
+    <form method="post" action="/ko/bekrafta" data-roll="bekrafta-form" {% if p.bekraftad %}hidden{% endif %}>
+      <input type="hidden" name="nyckel" value="{{ p.nyckel }}">
+      <input type="hidden" name="period" value="{{ rap.period }}">
+      <button type="submit">Bekräfta registrerad</button>
+    </form>
+    <form method="post" action="/ko/angra" data-roll="angra-form" {% if not p.bekraftad %}hidden{% endif %}>
+      <input type="hidden" name="nyckel" value="{{ p.nyckel }}">
+      <input type="hidden" name="period" value="{{ rap.period }}">
+      <button type="submit" class="secondary outline">Ångra</button>
+    </form>
+  </div>
+</article>
+{% endfor %}
+{% endblock %}

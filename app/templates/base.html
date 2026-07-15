@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titel %}Håven{% endblock %} - kollektverktyg</title>
+  <link rel="stylesheet" href="/static/pico.min.css">
+  <link rel="stylesheet" href="/static/tokens.css">
+</head>
+<body>
+  <header class="hv-top">
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <span class="hv-titel"><a href="/{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Håven</a></span>
+      <nav>
+        <a href="/ko{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Arbetskö</a>
+        <a href="/underlag{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Underlag</a>
+        <a href="/omatchade{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Omatchade</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

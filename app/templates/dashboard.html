@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titel %}Översikt{% endblock %}
+{% block content %}
+<h1>Översikt</h1>
+
+<form method="get" action="/" style="margin-bottom:1rem;">
+  <label for="fil">Swish-rapport</label>
+  <select id="fil" name="fil" onchange="this.form.submit()">
+    {% for r in rapporter %}
+      <option value="{{ r }}" {% if r == vald %}selected{% endif %}>{{ r }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button type="submit">Läs in</button></noscript>
+</form>
+
+{% if not vy %}
+  <article>
+    <p class="hv-tomt">Ingen Swish-rapport hittades i data-katalogen. Lägg en .xlsx-fil i <code>data/</code>.</p>
+  </article>
+{% else %}
+  {% set rap = vy.resultat.rapport %}
+  <article>
+    <header><strong>{{ rap.filnamn }}</strong> - period {{ rap.period }} ({{ rap.datumintervall }})</header>
+    <div class="grid">
+      <div><small>Transaktioner</small><br><strong style="font-size:1.4rem;">{{ rap.transaktioner|length }}</strong></div>
+      <div><small>Total inkommande</small><br><strong style="font-size:1.4rem;">{{ total|kr }} kr</strong></div>
+      <div><small>Poster att registrera</small><br><strong style="font-size:1.4rem;">{{ vy.totalt }}</strong></div>
+      <div><small>Omatchade rader</small><br>
+        <strong style="font-size:1.4rem;" class="{% if vy.resultat.underlag.omatchade %}hv-badge varning{% endif %}">
+          {{ vy.resultat.underlag.omatchade|length }}</strong></div>
+    </div>
+    <footer>
+      <div class="hv-progress">
+        <progress value="{{ vy.klara }}" max="{{ vy.totalt }}"></progress>
+        <span class="hv-rakning">{{ vy.klara }} / {{ vy.totalt }} klara</span>
+      </div>
+      <a role="button" href="/ko?fil={{ vald|urlencode }}">Öppna arbetskön</a>
+    </footer>
+  </article>
+{% endif %}
+{% endblock %}

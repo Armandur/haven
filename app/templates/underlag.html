@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titel %}Underlag{% endblock %}
+{% block content %}
+<h1>Registreringsunderlag - {{ underlag.period }}</h1>
+<p class="hv-meta">Läsvy att stämma av mot. Inbetalningsmetod: Swish 1.</p>
+
+<h2>Församlingskollekter (F)</h2>
+<figure><table>
+  <thead><tr><th>Församling</th><th>Datum</th><th>Ändamål</th><th style="text-align:right">Belopp</th></tr></thead>
+  <tbody>
+    {% for p in underlag.f_poster %}
+    <tr><td>{{ p.forsamling }}</td><td>{{ p.datum }}</td><td>{{ p.andamal }}</td><td style="text-align:right">{{ p.belopp|kr }}</td></tr>
+    {% else %}<tr><td colspan="4" class="hv-tomt">Inga</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+
+<h2>Riks- och stiftskollekter (R/S) - grupperade per tillfälle</h2>
+{% for g in underlag.rs_grupper %}
+<article class="hv-post">
+  <header>
+    <div><span class="hv-badge rs">{{ g.kollekttyp }}</span> <strong>{{ g.andamal }}</strong> <span class="hv-meta">{{ g.datum }}</span></div>
+    <span class="hv-belopp">{{ g.summa|kr }} kr</span>
+  </header>
+  <table>
+    <tbody>
+      {% for d in g.delposter %}
+      <tr><td>{{ d.forsamling }}</td><td style="text-align:right">{{ d.belopp|kr }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</article>
+{% else %}<p class="hv-tomt">Inga</p>{% endfor %}
+
+<h2>Gåvor - månadssumma per verksamhet</h2>
+<figure><table>
+  <thead><tr><th>Verksamhet</th><th>Period</th><th style="text-align:right">Belopp</th></tr></thead>
+  <tbody>
+    {% for p in underlag.gava_manad %}
+    <tr><td>{{ p.verksamhet }}</td><td>{{ p.period }}</td><td style="text-align:right">{{ p.belopp|kr }}</td></tr>
+    {% else %}<tr><td colspan="3" class="hv-tomt">Inga</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+
+<h2>Gåvor - per ändamål</h2>
+<p class="hv-meta">Provisorisk gruppering på meddelande. Ändamål bekräftas manuellt i Fas 1.</p>
+<figure><table>
+  <thead><tr><th>Verksamhet</th><th>Ändamål (prel.)</th><th style="text-align:right">Belopp</th></tr></thead>
+  <tbody>
+    {% for p in underlag.gava_per_andamal %}
+    <tr><td>{{ p.verksamhet }}</td><td>{{ p.andamal }}</td><td style="text-align:right">{{ p.belopp|kr }}</td></tr>
+    {% else %}<tr><td colspan="3" class="hv-tomt">Inga</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+{% endblock %}

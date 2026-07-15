@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titel %}Omatchade{% endblock %}
+{% block content %}
+{% set omatchade = vy.resultat.underlag.omatchade %}
+<h1>Omatchade / oklassade rader</h1>
+<p class="hv-meta">Rader som behöver åtgärdas manuellt innan de kan registreras.</p>
+
+{% if not omatchade %}
+  <article><p class="hv-badge klar">✓ Inga omatchade rader - allt kunde klassas och matchas.</p></article>
+{% else %}
+<figure>
+<table>
+  <thead>
+    <tr><th>Datum</th><th>Mottagare</th><th>Meddelande</th><th style="text-align:right">Belopp</th><th>Orsak</th></tr>
+  </thead>
+  <tbody>
+    {% for t in omatchade %}
+    <tr>
+      <td>{{ t.trans_datum }}</td>
+      <td>{{ t.mottagarnamn }}</td>
+      <td class="hv-swish">{{ t.meddelande }}</td>
+      <td style="text-align:right">{{ t.belopp|kr }}</td>
+      <td><span class="hv-badge varning">{{ t.omatchad_orsak }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</figure>
+{% endif %}
+{% endblock %}
