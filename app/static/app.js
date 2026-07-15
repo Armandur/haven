@@ -67,3 +67,60 @@
     });
   });
 })();
+
+// Justeringsvyn: live-filtrering av radtabeller, markera-alla-synliga och
+// lopande rakning av markerade rader + summa. Progressiv: utan JS visas alla
+// rader med kryssrutor och kan bockas manuellt.
+(function () {
+  "use strict";
+  function fmt(n) { return n.toFixed(2).replace(".", ","); }
+
+  function initBox(box) {
+    var table = box.querySelector(".hv-radtabell");
+    if (!table) return;
+    var rows = Array.prototype.slice.call(table.querySelectorAll("tbody tr.hv-rad"));
+    var fran = box.querySelector(".hv-f-fran");
+    var till = box.querySelector(".hv-f-till");
+    var medd = box.querySelector(".hv-f-medd");
+    var antal = box.querySelector(".hv-antal");
+    var markantal = box.querySelector(".hv-markantal");
+    var marksumma = box.querySelector(".hv-marksumma");
+    var allC = box.querySelector(".hv-markera-alla");
+
+    function synlig(r) {
+      var d = r.dataset.datum;
+      if (fran.value && d < fran.value) return false;
+      if (till.value && d > till.value) return false;
+      if (medd.value && r.dataset.meddelande.indexOf(medd.value.toLowerCase()) < 0) return false;
+      return true;
+    }
+    function uppdatera() {
+      var vis = 0, mark = 0, summa = 0;
+      rows.forEach(function (r) {
+        var s = synlig(r);
+        r.hidden = !s;
+        if (s) vis++;
+        var cb = r.querySelector(".hv-valj");
+        if (cb.checked) { mark++; summa += parseFloat(r.dataset.belopp) || 0; }
+      });
+      antal.textContent = vis;
+      markantal.textContent = mark;
+      marksumma.textContent = fmt(summa);
+    }
+    [fran, till, medd].forEach(function (el) { el.addEventListener("input", uppdatera); });
+    table.addEventListener("change", function (e) {
+      if (e.target.classList.contains("hv-valj")) uppdatera();
+    });
+    if (allC) allC.addEventListener("change", function () {
+      rows.forEach(function (r) {
+        if (!r.hidden) r.querySelector(".hv-valj").checked = allC.checked;
+      });
+      uppdatera();
+    });
+    uppdatera();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".hv-radfilter").forEach(initBox);
+  });
+})();

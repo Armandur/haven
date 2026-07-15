@@ -57,6 +57,12 @@ data/                  # in-filer (gitignorat, givarmeddelanden = personuppgifte
   totalrader saknar bokföringsdatum och filtreras på det.
 - **Testmånad = maj 2026** (filnamnet "25-05" till trots; innehållet är maj 2026).
   Facit: total 30 692, Domkyrko 5 016, ACT 6 656, Diakoni 1 885, 0 omatchade.
+- **tx_id** är en stabil hash per transaktion (innehåll + dup-index i filordning),
+  satt vid inläsning i `ingest_swish.py`. Används för radval i justeringsreglerna;
+  överlever omläsning av samma fil. Regler tillämpas på tx_id om satt, annars
+  på filter (bakåtkompatibelt).
+- **DB-migrering:** raw ALTER TABLE-guards i `database._migrera()` (ingen Alembic
+  i Fas 0-1). Lägg nya kolumner där.
 - **Kalendern kan vara ofullständig** för extra-gudstjänster (t.ex. konsert
   23 maj). Då blir framåtfyllningen "rätt enligt regeln" men avviker mot KOB:s
   faktiska tillfälle - fångas i avstämningen (Fas 1) och via manuell

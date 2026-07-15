@@ -176,3 +176,34 @@ def test_db_roundtrip_overstyrning(tmp_path, monkeypatch):
     res = kor_pipeline(SWISH, overstyrningar=ov)
     avst = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
     assert avst.antal_diffar == 0
+
+
+def test_tx_id_stabil_och_unik():
+    """tx_id ska vara stabilt mellan inlasningar och unikt per transaktion."""
+    from app.core.pipeline import las_rapport
+    a = las_rapport(SWISH)
+    b = las_rapport(SWISH)
+    ida = [t.tx_id for t in a.transaktioner]
+    idb = [t.tx_id for t in b.transaktioner]
+    assert ida == idb                      # deterministiskt
+    assert len(set(ida)) == len(ida)       # unikt aven for identiska gavor
+    assert all(t.tx_id for t in a.transaktioner)
+
+
+def test_overstyrning_via_tx_ids(res):
+    """Override pa bockade tx_ids (Stigsjö 05-23) ska nolla kollektdiffarna."""
+    from datetime import date
+    from app.config import Kollekttyp
+    from app.core.pipeline import kor_pipeline
+    from app.core.regler import Overstyrning
+    ids = frozenset(
+        t.tx_id for t in res.rapport.transaktioner
+        if t.forsamling == "Stigsjö församling" and t.trans_datum == date(2026, 5, 23))
+    assert len(ids) > 0
+    ov = [Overstyrning(id=1, period="2026-05", forsamling="",
+                       ny_andamal="Musikverksamheten i Stigsjö församling",
+                       ny_typ=Kollekttyp.F, ny_tillfallesdatum=date(2026, 5, 23),
+                       tx_ids=ids)]
+    r2 = kor_pipeline(SWISH, overstyrningar=ov)
+    avst = avstam_kollekt(r2.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
+    assert avst.antal_diffar == 0

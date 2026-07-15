@@ -11,6 +11,7 @@ from app.config import Kategori, Kollekttyp, Registreringssatt
 @dataclass
 class Transaktion:
     """En Swish-inbetalning fran rapporten, en rad."""
+    tx_id: str = field(default="", kw_only=True)   # stabil identitet for radval
     flik: str                        # bladnamn/ansvarsomrade i rapporten
     bokf_datum: date
     trans_datum: date

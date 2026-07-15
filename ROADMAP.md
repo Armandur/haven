@@ -36,8 +36,10 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   ändamål/typ/tillfällesdatum. Löser Stigsjö-typen (05-17 Diakonala -> 05-23 Musik).
 - [x] Särskilda poster - bryter ut loppis/ljus/konsert ur månadssumman via filter.
   Invariant: allmän + särskilda = kontototal.
+- [x] Radval: välj församling/konto, se raderna, filtrera live (datum/meddelande)
+  och bocka för de rader som ska justeras. Stabil tx_id per transaktion; regeln
+  lagrar bockade tx_ids (filter finns kvar som alternativ, bakåtkompatibelt).
 - [ ] Kvar: historik på överstyrningar (vem/när/tidigare värde) - byggs med Fas 2.
-- [ ] Kvar: live-förhandsvisning av filterträff (antal/summa) innan man sparar.
 
 ## Fas 2 - tillstånd, status och redigerbar konfiguration
 

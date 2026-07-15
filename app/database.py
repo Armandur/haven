@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import String, create_engine, delete, select
+from sqlalchemy import String, create_engine, delete, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 from app.config import DB_PATH, Kollekttyp
@@ -18,6 +18,11 @@ class Base(DeclarativeBase):
 
 def _pdate(s: str | None) -> date | None:
     return date.fromisoformat(s) if s else None
+
+
+def _ptxids(s: str | None) -> frozenset[str] | None:
+    ids = [x for x in (s or "").split(",") if x]
+    return frozenset(ids) if ids else None
 
 
 def _now() -> str:
@@ -44,6 +49,7 @@ class OverstyrningRad(Base):
     ny_andamal: Mapped[str] = mapped_column(String)
     ny_typ: Mapped[str] = mapped_column(String, default="")            # F/R/S eller ""
     ny_tillfallesdatum: Mapped[str] = mapped_column(String, default="")  # ISO eller ""
+    tx_ids: Mapped[str] = mapped_column(String, default="")            # kommaseparerade
     meddelande_filter: Mapped[str] = mapped_column(String, default="")
     datum_fran: Mapped[str] = mapped_column(String, default="")
     datum_till: Mapped[str] = mapped_column(String, default="")
@@ -61,6 +67,7 @@ class SarskildPostRad(Base):
     verksamhet: Mapped[str] = mapped_column(String)
     namn: Mapped[str] = mapped_column(String)
     oronmarkning: Mapped[str] = mapped_column(String, default="")
+    tx_ids: Mapped[str] = mapped_column(String, default="")            # kommaseparerade
     meddelande_filter: Mapped[str] = mapped_column(String, default="")
     datum_fran: Mapped[str] = mapped_column(String, default="")
     datum_till: Mapped[str] = mapped_column(String, default="")
@@ -73,6 +80,21 @@ engine = create_engine(f"sqlite:///{DB_PATH}", future=True)
 
 def init_db() -> None:
     Base.metadata.create_all(engine)
+    _migrera()
+
+
+def _migrera() -> None:
+    """Latta ALTER TABLE-guards for befintliga databaser (ingen Alembic i Fas 0-1)."""
+    tillagg = {
+        "overstyrning": [("tx_ids", "TEXT DEFAULT ''")],
+        "sarskild_post": [("tx_ids", "TEXT DEFAULT ''")],
+    }
+    with engine.begin() as conn:
+        for tabell, kolumner in tillagg.items():
+            befintliga = {rad[1] for rad in conn.execute(text(f"PRAGMA table_info({tabell})"))}
+            for namn, typ in kolumner:
+                if namn not in befintliga:
+                    conn.execute(text(f"ALTER TABLE {tabell} ADD COLUMN {namn} {typ}"))
 
 
 def bekraftade_nycklar(period: str) -> set[str]:
@@ -116,6 +138,7 @@ def las_overstyrningar(period: str) -> list[Overstyrning]:
                 ny_andamal=r.ny_andamal,
                 ny_typ=Kollekttyp(r.ny_typ) if r.ny_typ else None,
                 ny_tillfallesdatum=_pdate(r.ny_tillfallesdatum),
+                tx_ids=_ptxids(r.tx_ids),
                 meddelande_filter=r.meddelande_filter or None,
                 datum_fran=_pdate(r.datum_fran), datum_till=_pdate(r.datum_till),
                 orsak=r.orsak,
@@ -125,12 +148,14 @@ def las_overstyrningar(period: str) -> list[Overstyrning]:
 
 def skapa_overstyrning(period: str, forsamling: str, ny_andamal: str,
                        ny_typ: str = "", ny_tillfallesdatum: str = "",
+                       tx_ids: list[str] | None = None,
                        meddelande_filter: str = "", datum_fran: str = "",
                        datum_till: str = "", orsak: str = "", av_vem: str = "") -> None:
     with Session(engine) as s:
         s.add(OverstyrningRad(
             period=period, forsamling=forsamling, ny_andamal=ny_andamal,
             ny_typ=ny_typ, ny_tillfallesdatum=ny_tillfallesdatum,
+            tx_ids=",".join(tx_ids or []),
             meddelande_filter=meddelande_filter, datum_fran=datum_fran,
             datum_till=datum_till, orsak=orsak, av_vem=av_vem, tidpunkt=_now(),
         ))
@@ -154,7 +179,7 @@ def las_sarskilda(period: str) -> list[SarskildPost]:
         return [
             SarskildPost(
                 id=r.id, period=r.period, verksamhet=r.verksamhet, namn=r.namn,
-                oronmarkning=r.oronmarkning,
+                oronmarkning=r.oronmarkning, tx_ids=_ptxids(r.tx_ids),
                 meddelande_filter=r.meddelande_filter or None,
                 datum_fran=_pdate(r.datum_fran), datum_till=_pdate(r.datum_till),
             ) for r in rader
@@ -162,12 +187,14 @@ def las_sarskilda(period: str) -> list[SarskildPost]:
 
 
 def skapa_sarskild(period: str, verksamhet: str, namn: str, oronmarkning: str = "",
+                   tx_ids: list[str] | None = None,
                    meddelande_filter: str = "", datum_fran: str = "",
                    datum_till: str = "", av_vem: str = "") -> None:
     with Session(engine) as s:
         s.add(SarskildPostRad(
             period=period, verksamhet=verksamhet, namn=namn,
-            oronmarkning=oronmarkning, meddelande_filter=meddelande_filter,
+            oronmarkning=oronmarkning, tx_ids=",".join(tx_ids or []),
+            meddelande_filter=meddelande_filter,
             datum_fran=datum_fran, datum_till=datum_till, av_vem=av_vem, tidpunkt=_now(),
         ))
         s.commit()

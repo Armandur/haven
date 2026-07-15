@@ -1,6 +1,7 @@
 """Webbvyn: dashboard, styrd arbetsko, omatchade rader och underlagsvy."""
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -112,9 +113,22 @@ def avstamning(request: Request):
 def justeringar(request: Request):
     vy = _vy(request)
     period = vy.resultat.rapport.period
+    txs = vy.resultat.rapport.transaktioner
     manadskonton = [m.verksamhet for m in MOTTAGARE
                     if m.kategori is Kategori.GAVA
                     and m.registreringssatt is Registreringssatt.MANADSSUMMA]
+
+    ov_forsamling = request.query_params.get("ov_forsamling") or ""
+    sar_verksamhet = request.query_params.get("sar_verksamhet") or ""
+    ov_rader = sorted(
+        (t for t in txs if t.kategori is Kategori.KOLLEKT and t.forsamling == ov_forsamling),
+        key=lambda t: (t.trans_datum, t.tid or datetime.min.time())
+    ) if ov_forsamling else []
+    sar_rader = sorted(
+        (t for t in txs if t.kategori is Kategori.GAVA and t.verksamhet == sar_verksamhet),
+        key=lambda t: (t.trans_datum, t.tid or datetime.min.time())
+    ) if sar_verksamhet else []
+
     resultat = kor_avstamning(vy.resultat)
     sar_effekt = {p.sarskild_post_id: p for p in vy.resultat.underlag.gava_sarskilda}
     return templates.TemplateResponse(request, "justeringar.html", {
@@ -124,6 +138,8 @@ def justeringar(request: Request):
         "forsamlingar": [f.kanoniskt for f in FORSAMLINGAR],
         "manadskonton": manadskonton,
         "avst": resultat, "sar_effekt": sar_effekt,
+        "ov_forsamling": ov_forsamling, "sar_verksamhet": sar_verksamhet,
+        "ov_rader": ov_rader, "sar_rader": sar_rader,
     })
 
 
@@ -135,13 +151,14 @@ def _redir_justeringar(request: Request):
 @router.post("/justeringar/overstyrning/skapa")
 async def skapa_overstyrning_route(
     request: Request,
-    period: str = Form(...), forsamling: str = Form(...), ny_andamal: str = Form(...),
+    period: str = Form(...), forsamling: str = Form(""), ny_andamal: str = Form(...),
     ny_typ: str = Form(""), ny_tillfallesdatum: str = Form(""),
+    tx_ids: list[str] = Form(default=[]),
     meddelande_filter: str = Form(""), datum_fran: str = Form(""),
     datum_till: str = Form(""), orsak: str = Form(""),
 ):
     skapa_overstyrning(period, forsamling, ny_andamal, ny_typ, ny_tillfallesdatum,
-                       meddelande_filter, datum_fran, datum_till, orsak)
+                       tx_ids, meddelande_filter, datum_fran, datum_till, orsak)
     return _redir_justeringar(request)
 
 
@@ -155,11 +172,12 @@ async def tabort_overstyrning_route(request: Request, id: int = Form(...)):
 async def skapa_sarskild_route(
     request: Request,
     period: str = Form(...), verksamhet: str = Form(...), namn: str = Form(...),
-    oronmarkning: str = Form(""), meddelande_filter: str = Form(""),
+    oronmarkning: str = Form(""), tx_ids: list[str] = Form(default=[]),
+    meddelande_filter: str = Form(""),
     datum_fran: str = Form(""), datum_till: str = Form(""),
 ):
-    skapa_sarskild(period, verksamhet, namn, oronmarkning, meddelande_filter,
-                   datum_fran, datum_till)
+    skapa_sarskild(period, verksamhet, namn, oronmarkning, tx_ids,
+                   meddelande_filter, datum_fran, datum_till)
     return _redir_justeringar(request)
 
 

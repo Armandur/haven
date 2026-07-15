@@ -6,7 +6,9 @@ och clearing-/kontonummer lases ur metadatablocket per blad.
 """
 from __future__ import annotations
 
+import hashlib
 import re
+from collections import defaultdict
 from datetime import date, datetime, time
 from pathlib import Path
 
@@ -146,6 +148,7 @@ def las_swishrapport(sokvag: str | Path) -> Swishrapport:
             ))
     wb.close()
 
+    _satt_tx_id(transaktioner)
     period = _harled_period(intervall_totalt, transaktioner)
     return Swishrapport(
         filnamn=sokvag.name,
@@ -153,6 +156,23 @@ def las_swishrapport(sokvag: str | Path) -> Swishrapport:
         datumintervall=intervall_totalt or "",
         transaktioner=transaktioner,
     )
+
+
+def _satt_tx_id(txs: list[Transaktion]) -> None:
+    """Stabil identitet per transaktion (overlever omlasning av samma fil).
+
+    Hash av innehallet + ett lopnummer for exakta dubletter (samma tid, belopp
+    och meddelande), i filordning.
+    """
+    seen: dict[str, int] = defaultdict(int)
+    for t in txs:
+        bas = "|".join([
+            t.flik, str(t.bokf_datum), str(t.trans_datum), str(t.tid),
+            t.mottagarnummer, str(t.belopp), t.meddelande,
+        ])
+        n = seen[bas]
+        seen[bas] += 1
+        t.tx_id = hashlib.sha1(f"{bas}#{n}".encode()).hexdigest()[:12]
 
 
 def _harled_period(intervall: str | None, txs: list[Transaktion]) -> str:
