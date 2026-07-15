@@ -87,8 +87,10 @@ lämna en klickbar länk** så Rasmus kan testa direkt (även från telefon).
 
 - Hämta ledig port med `svc port`, starta uvicorn i bakgrunden med stdout/stderr
   till `dev.log`, smoke-testa med `curl` och browser-verifiera (obscura/shot).
-- Ge alltid full `http://ubuntu-ai:PORT/`-länk (plus relevant subsökväg, t.ex.
-  `/ko`, `/underlag`) - aldrig `localhost`/`127.0.0.1`.
+- **Ge ALLTID en fullständig, klickbar `http://ubuntu-ai:PORT/sublänk` varje gång
+  en vy nämns** - skriv aldrig bara sökvägen (`/ko`) i löpande text.
+  Full URL med rätt port och undersökväg (t.ex. `http://ubuntu-ai:8003/justeringar`)
+  så Rasmus kan klicka direkt, även från telefon. Aldrig `localhost`/`127.0.0.1`.
 - Registrera tjänsten i portalen (`svc register haven --port N --project haven
   --pid PID`) medan den kör.
 - **Tillåtelse att städa egna orphanade Håven-servrar:** om en tidigare
