@@ -71,3 +71,19 @@ maj 2026. Flyttas till SQLite och blir redigerbara i Fas 2.
 ## Köra
 
 Se README.md. CLI: `uv run cli.py <swishfil>`. Test: `uv run --with pytest pytest`.
+
+## Dev-serverflöde (stående instruktion från Rasmus)
+
+När en synlig funktion byggts eller ändrats: **starta själv igång servern och
+lämna en klickbar länk** så Rasmus kan testa direkt (även från telefon).
+
+- Hämta ledig port med `svc port`, starta uvicorn i bakgrunden med stdout/stderr
+  till `dev.log`, smoke-testa med `curl` och browser-verifiera (obscura/shot).
+- Ge alltid full `http://ubuntu-ai:PORT/`-länk (plus relevant subsökväg, t.ex.
+  `/ko`, `/underlag`) - aldrig `localhost`/`127.0.0.1`.
+- Registrera tjänsten i portalen (`svc register haven --port N --project haven
+  --pid PID`) medan den kör.
+- **Tillåtelse att städa egna orphanade Håven-servrar:** om en tidigare
+  Håven-uvicorn glömts kvar (t.ex. efter en `/clear`), identifiera exakt PID
+  (`ss -tlnp`, verifiera mot `svc list` att det är haven) och döda bara den.
+  Gäller enbart Håvens egna processer - rör aldrig andra projekts servrar.
