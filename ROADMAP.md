@@ -46,16 +46,18 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 - [x] Statusspårning (`status_service.py`, vy `/status`): tillstånd per enhet
   (Ej påbörjad -> Påbörjad -> Registrerad -> Avstämd) härlett ur arbetsköns
   bekräftelser + KOB-avstämningen. Ersätter Registreringar-matrisen.
+- [x] Rapportregister + idempotens + ändringsdetektering (`rapport`-tabell): samma
+  rapport dubbelregistrerar inte, och en ändrad version (ny innehålls-hash på samma
+  filnamn) flaggas så tx_id-baserade regler kan ses över. Månadsöversikt på
+  dashboarden.
 - [ ] Kvar nedan:
 
+- Historik på överstyrningar/särskilda poster (skapad/borttagen, vem/när).
 - Flytta mottagarmappning, församlingsalias och ändamålskalender till SQLite och
   gör dem **redigerbara i ett gränssnitt**. Detta är förutsättningen för att
   verktyget ska kunna bli generellt och användas av andra enheter/pastorat utan
   kodändring (påsatt todo). Byggs när det finns konkret efterfrågan från fler
   enheter - inte spekulativt i förväg.
-- Statusspårning per verksamhet/församling (Ej påbörjad -> Registrerad -> Avstämd)
-  som ersätter matrisen `Registreringar`.
-- Idempotens och historik (rapport-hash, överstyrningshistorik).
 
 ## Fas 3 - bekvämlighet
 

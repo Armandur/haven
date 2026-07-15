@@ -29,8 +29,12 @@ Reglerna persisteras i SQLite och tillämpas på hela flödet.
 och verksamhet (Ej påbörjad -> Påbörjad -> Registrerad -> Avstämd) härlett ur
 arbetsköns bekräftelser och KOB-avstämningen. Ersätter Registreringar-matrisen.
 
-Kommande: idempotens/historik och flermånadsflöde (Fas 2 forts.), halvautomatisk
-KOB-inmatning (Fas 3).
+Rapporter registreras med innehålls-hash (idempotens: samma rapport
+dubbelregistreras inte; en ändrad version flaggas), och dashboarden visar en
+översikt över importerade månader.
+
+Kommande: historik på regeländringar och redigerbar konfiguration (Fas 2 forts.),
+halvautomatisk KOB-inmatning (Fas 3).
 
 ## Köra
 

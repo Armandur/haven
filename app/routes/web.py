@@ -13,7 +13,9 @@ from app.database import (
     angra,
     bekrafta,
     las_overstyrningar,
+    las_rapporter,
     las_sarskilda,
+    rapport_andrad,
     skapa_overstyrning,
     skapa_sarskild,
     ta_bort_overstyrning,
@@ -51,10 +53,11 @@ def dashboard(request: Request):
         return templates.TemplateResponse(request, "dashboard.html", {
             "vy": None, "rapporter": rapporter, "vald": None,
         })
-    vy = ladda_ko(fil)
+    vy = ladda_ko(fil)   # registrerar rapporten i registret
     total = sum((t.belopp for t in vy.resultat.rapport.transaktioner), Decimal("0"))
     return templates.TemplateResponse(request, "dashboard.html", {
         "vy": vy, "rapporter": rapporter, "vald": fil.name, "total": total,
+        "registrerade": las_rapporter(), "andrad": rapport_andrad(fil.name),
     })
 
 

@@ -13,6 +13,13 @@
   <noscript><button type="submit">Läs in</button></noscript>
 </form>
 
+{% if andrad %}
+<article><p class="hv-badge varning">Rapportens innehåll har ändrats sedan första importen.</p>
+Servicebyrån kan ha skickat en ny version. Se över radbaserade justeringar
+(överstyrningar/särskilda poster) i <a href="/justeringar?fil={{ vald|urlencode }}">justeringar</a>,
+eftersom de bygger på transaktions-ID som kan ha ändrats.</article>
+{% endif %}
+
 {% if not vy %}
   <article>
     <p class="hv-tomt">Ingen Swish-rapport hittades i data-katalogen. Lägg en .xlsx-fil i <code>data/</code>.</p>
@@ -37,5 +44,25 @@
       <a role="button" href="/ko?fil={{ vald|urlencode }}">Öppna arbetskön</a>
     </footer>
   </article>
+
+  {% if registrerade %}
+  <h2>Importerade rapporter</h2>
+  <figure><table>
+    <thead><tr><th>Period</th><th>Fil</th><th style="text-align:right">Tx</th><th style="text-align:right">Total</th><th>Först importerad</th><th></th></tr></thead>
+    <tbody>
+      {% for r in registrerade %}
+      <tr>
+        <td>{{ r.period }}</td>
+        <td><a href="/?fil={{ r.filnamn|urlencode }}">{{ r.filnamn }}</a>
+          {% if r.andrad %} <span class="hv-badge varning">ändrad</span>{% endif %}</td>
+        <td style="text-align:right">{{ r.antal_tx }}</td>
+        <td style="text-align:right">{{ r.total|kr }} kr</td>
+        <td class="hv-swish">{{ r.forst_importerad[:10] }}</td>
+        <td>{% if r.filnamn == vald %}<span class="hv-badge klar">öppen</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></figure>
+  {% endif %}
 {% endif %}
 {% endblock %}

@@ -3,7 +3,9 @@ full datamodell enligt SPEC.md avsnitt 11 byggs ut i Fas 2.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import String, create_engine, delete, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
@@ -73,6 +75,20 @@ class SarskildPostRad(Base):
     datum_till: Mapped[str] = mapped_column(String, default="")
     av_vem: Mapped[str] = mapped_column(String, default="")
     tidpunkt: Mapped[str] = mapped_column(String, default="")
+
+
+class RapportRad(Base):
+    """Register over importerade Swish-rapporter (idempotens + andringsdetektering)."""
+    __tablename__ = "rapport"
+
+    filnamn: Mapped[str] = mapped_column(String, primary_key=True)
+    period: Mapped[str] = mapped_column(String, index=True)
+    innehalls_hash: Mapped[str] = mapped_column(String, default="")
+    antal_tx: Mapped[int] = mapped_column(default=0)
+    total: Mapped[str] = mapped_column(String, default="0.00")
+    forst_importerad: Mapped[str] = mapped_column(String, default="")
+    senast_sedd: Mapped[str] = mapped_column(String, default="")
+    andrad: Mapped[int] = mapped_column(default=0)   # latchad flagga: innehall har andrats
 
 
 engine = create_engine(f"sqlite:///{DB_PATH}", future=True)
@@ -204,3 +220,61 @@ def ta_bort_sarskild(id: int) -> None:
     with Session(engine) as s:
         s.execute(delete(SarskildPostRad).where(SarskildPostRad.id == id))
         s.commit()
+
+
+# --- Rapportregister --------------------------------------------------------
+
+@dataclass
+class Rapportpost:
+    filnamn: str
+    period: str
+    antal_tx: int
+    total: Decimal
+    forst_importerad: str
+    senast_sedd: str
+    andrad: bool
+
+
+def registrera_rapport(filnamn: str, period: str, innehalls_hash: str,
+                       antal_tx: int, total: str) -> bool:
+    """Upsert pa filnamn. Returnerar True om innehallet andrats sedan forra gangen
+    (samma filnamn men ny hash) - da bor tx_id-baserade regler ses over."""
+    now = _now()
+    andrad_nu = False
+    with Session(engine) as s:
+        rad = s.get(RapportRad, filnamn)
+        if rad is None:
+            s.add(RapportRad(
+                filnamn=filnamn, period=period, innehalls_hash=innehalls_hash,
+                antal_tx=antal_tx, total=total, forst_importerad=now,
+                senast_sedd=now, andrad=0))
+        else:
+            if rad.innehalls_hash and rad.innehalls_hash != innehalls_hash:
+                rad.andrad = 1
+                andrad_nu = True
+            rad.innehalls_hash = innehalls_hash
+            rad.period = period
+            rad.antal_tx = antal_tx
+            rad.total = total
+            rad.senast_sedd = now
+        s.commit()
+    return andrad_nu
+
+
+def las_rapporter() -> list[Rapportpost]:
+    with Session(engine) as s:
+        rader = s.scalars(select(RapportRad).order_by(RapportRad.period.desc())).all()
+        return [
+            Rapportpost(
+                filnamn=r.filnamn, period=r.period, antal_tx=r.antal_tx,
+                total=Decimal(r.total or "0.00"),
+                forst_importerad=r.forst_importerad, senast_sedd=r.senast_sedd,
+                andrad=bool(r.andrad),
+            ) for r in rader
+        ]
+
+
+def rapport_andrad(filnamn: str) -> bool:
+    with Session(engine) as s:
+        rad = s.get(RapportRad, filnamn)
+        return bool(rad and rad.andrad)

@@ -5,6 +5,7 @@ underlaget (filen las in pa nytt vid varje forfragan; berakningen ar snabb).
 """
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -14,7 +15,12 @@ from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp
 from app.core.aggregate import Underlag
 from app.core.models import Transaktion
 from app.core.pipeline import Pipelineresultat, bearbeta, las_rapport
-from app.database import bekraftade_nycklar, las_overstyrningar, las_sarskilda
+from app.database import (
+    bekraftade_nycklar,
+    las_overstyrningar,
+    las_sarskilda,
+    registrera_rapport,
+)
 
 
 @dataclass
@@ -221,10 +227,20 @@ def standard_rapportfil() -> Path | None:
 
 
 def ladda_ko(swish_sokvag: str | Path) -> KoVy:
+    swish_sokvag = Path(swish_sokvag)
     rapport = las_rapport(swish_sokvag)
+    _registrera(swish_sokvag, rapport)
     resultat = bearbeta(
         rapport,
         overstyrningar=las_overstyrningar(rapport.period),
         sarskilda_poster=las_sarskilda(rapport.period),
     )
     return KoVy(resultat=resultat, poster=bygg_ko(resultat.underlag))
+
+
+def _registrera(sokvag: Path, rapport) -> None:
+    """Registrera rapporten i registret (idempotent, upsert pa filnamn)."""
+    filhash = hashlib.sha256(sokvag.read_bytes()).hexdigest()
+    total = sum((t.belopp for t in rapport.transaktioner), Decimal("0.00"))
+    registrera_rapport(rapport.filnamn, rapport.period, filhash,
+                       len(rapport.transaktioner), str(total))

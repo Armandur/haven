@@ -225,3 +225,19 @@ def test_status_harleds(res):
     assert fmap["Säbrå församling"].avstamning_ok is True     # nettar rent
     assert vmap["ACT Svenska Kyrkan"].avstamning_ok is True
     assert vmap["Musik"].avstamning_ok is False               # ej registrerad i KOB
+
+
+def test_rapportregister_idempotens_och_andring(tmp_path, monkeypatch):
+    """Samma rapport dubbelregistrerar inte; ändrad hash flaggas (latchas)."""
+    from sqlalchemy import create_engine
+    import app.database as db
+    eng = create_engine(f"sqlite:///{tmp_path / 't.db'}", future=True)
+    monkeypatch.setattr(db, "engine", eng)
+    db.Base.metadata.create_all(eng)
+
+    assert db.registrera_rapport("f.xlsx", "2026-05", "H1", 515, "30692.00") is False
+    assert db.registrera_rapport("f.xlsx", "2026-05", "H1", 515, "30692.00") is False
+    assert len(db.las_rapporter()) == 1                       # idempotent
+    assert db.registrera_rapport("f.xlsx", "2026-05", "H2", 515, "30692.00") is True
+    assert db.rapport_andrad("f.xlsx") is True                # latchad
+    assert len(db.las_rapporter()) == 1
