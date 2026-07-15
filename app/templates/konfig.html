@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titel %}Konfiguration{% endblock %}
+{% block content %}
+{% set q = "?fil=" ~ (vald|urlencode) if vald else "" %}
+{% set qamp = "&fil=" ~ (vald|urlencode) if vald else "" %}
+<h1>Konfiguration</h1>
+<p class="hv-meta">Mottagarmappning och församlingsalias. Ändamålskalendern är
+oförändrad (Excel-filen är sanningskälla). Ändringar slår igenom direkt.</p>
+
+<h2>Mottagare</h2>
+<figure><table>
+  <thead><tr><th>Mottagarnamn</th><th>Kategori</th><th>Verksamhet</th><th>Reg.sätt</th><th></th></tr></thead>
+  <tbody>
+    {% for m in mottagare %}
+    <tr>
+      <td>{{ m.namn }}</td>
+      <td>{% if m.kategori.value == 'kollekt' %}<span class="hv-badge typ-f">kollekt</span>{% else %}<span class="hv-badge typ-gava">gåva</span>{% endif %}</td>
+      <td>{{ m.verksamhet or '' }}</td>
+      <td>{{ m.registreringssatt.value if m.registreringssatt else '' }}</td>
+      <td>
+        <a href="/konfig?namn={{ m.namn|urlencode }}{{ qamp }}" role="button" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ändra</a>
+        <form method="post" action="/konfig/mottagare/tabort{{ q }}" style="display:inline;">
+          <input type="hidden" name="namn" value="{{ m.namn }}">
+          <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+
+{% set vald_m = (mottagare | selectattr('namn', 'equalto', forhandsvald_namn) | list | first) if forhandsvald_namn else none %}
+<article>
+  <header><strong>{% if vald_m %}Ändra "{{ vald_m.namn }}"{% else %}Lägg till / ändra mottagare{% endif %}</strong></header>
+  <form method="post" action="/konfig/mottagare/spara{{ q }}">
+    <div class="grid">
+      <label>Mottagarnamn (exakt som i Swish-rapporten)
+        <input type="text" name="namn" required value="{{ forhandsvald_namn }}" {% if vald_m %}readonly{% endif %}></label>
+      <label>Kategori
+        <select name="kategori">
+          <option value="kollekt" {% if vald_m and vald_m.kategori.value == 'kollekt' %}selected{% endif %}>Kollekt (församling)</option>
+          <option value="gava" {% if vald_m and vald_m.kategori.value == 'gava' %}selected{% endif %}>Gåva (verksamhet)</option>
+        </select>
+      </label>
+    </div>
+    <div class="grid">
+      <label>Verksamhet (endast gåva)
+        <input type="text" name="verksamhet" value="{{ vald_m.verksamhet or '' if vald_m else '' }}" placeholder="t.ex. Musik"></label>
+      <label>Registreringssätt (endast gåva)
+        <select name="registreringssatt">
+          <option value="">(ej gåva)</option>
+          <option value="manadssumma" {% if vald_m and vald_m.registreringssatt and vald_m.registreringssatt.value == 'manadssumma' %}selected{% endif %}>Månadssumma</option>
+          <option value="per_andamal" {% if vald_m and vald_m.registreringssatt and vald_m.registreringssatt.value == 'per_andamal' %}selected{% endif %}>Per ändamål</option>
+        </select>
+      </label>
+      <label style="align-self:end;"><input type="checkbox" name="aktiv" checked> Aktiv</label>
+    </div>
+    <button type="submit">Spara mottagare</button>
+  </form>
+  <p class="hv-swish">För kollektmottagare (församlingar) lämnas verksamhet/registreringssätt tomma;
+  namnet kopplas till en församling via kanoniskt namn eller alias nedan.</p>
+</article>
+
+<h2>Församlingar och alias</h2>
+<figure><table>
+  <thead><tr><th>Kanoniskt namn</th><th>Kortkod</th><th>Alias (kommaseparerade)</th><th></th></tr></thead>
+  <tbody>
+    {% for f in forsamlingar %}
+    <tr>
+      <form method="post" action="/konfig/forsamling/alias{{ q }}">
+        <td>{{ f.kanoniskt }}<input type="hidden" name="kanoniskt" value="{{ f.kanoniskt }}"></td>
+        <td>{{ f.kortkod }}</td>
+        <td><input type="text" name="alias" value="{{ f.alias|join(', ') }}" style="margin:0;"></td>
+        <td><button type="submit" style="margin:0;padding:0.3rem 0.7rem;">Spara</button></td>
+      </form>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+{% endblock %}

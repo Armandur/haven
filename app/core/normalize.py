@@ -14,17 +14,29 @@ def _nyckel(s: str | None) -> str:
     return _WS.sub(" ", (s or "").strip()).casefold()
 
 
-# forsamlingsuppslag: nyckel (kanoniskt + alias) -> Forsamling
+# Uppslagstabeller. Byggs om via satt_konfig() (fran DB vid appstart), och
+# initieras har med frodata sa att ren anvandning (tester, CLI) funkar utan DB.
 _FORS_LOOKUP: dict[str, Forsamling] = {}
-for _f in FORSAMLINGAR:
-    _FORS_LOOKUP[_nyckel(_f.kanoniskt)] = _f
-    for _a in _f.alias:
-        _FORS_LOOKUP[_nyckel(_a)] = _f
+_KORTKOD_LOOKUP: dict[str, Forsamling] = {}
+_MOTT_LOOKUP: dict[str, Mottagare] = {}
 
-_KORTKOD_LOOKUP: dict[str, Forsamling] = {_f.kortkod: _f for _f in FORSAMLINGAR}
 
-# mottagaruppslag: nyckel -> Mottagare
-_MOTT_LOOKUP: dict[str, Mottagare] = {_nyckel(_m.namn): _m for _m in MOTTAGARE}
+def satt_konfig(forsamlingar: tuple[Forsamling, ...],
+                mottagare: tuple[Mottagare, ...]) -> None:
+    """Bygg om namnuppslagen fran given konfig (kanoniska namn, alias, mottagare)."""
+    _FORS_LOOKUP.clear()
+    _KORTKOD_LOOKUP.clear()
+    _MOTT_LOOKUP.clear()
+    for f in forsamlingar:
+        _FORS_LOOKUP[_nyckel(f.kanoniskt)] = f
+        _KORTKOD_LOOKUP[f.kortkod] = f
+        for a in f.alias:
+            _FORS_LOOKUP[_nyckel(a)] = f
+    for m in mottagare:
+        _MOTT_LOOKUP[_nyckel(m.namn)] = m
+
+
+satt_konfig(FORSAMLINGAR, MOTTAGARE)
 
 
 def forsamling_fran_namn(namn: str | None) -> Forsamling | None:

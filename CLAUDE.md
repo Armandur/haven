@@ -71,10 +71,18 @@ data/                  # in-filer (gitignorat, givarmeddelanden = personuppgifte
   Unga" vs "Svenska Kyrkans Unga / SALT..."). Behöver aliasnormalisering vid
   avstämning per ändamål i Fas 1.
 
-## Frödata
+## Frödata och redigerbar konfiguration
 
-Mottagarmappning och församlingsalias ligger i `app/config.py`, bekräftade mot
-maj 2026. Flyttas till SQLite och blir redigerbara i Fas 2.
+`app/config.py` innehåller **frödata** för mottagarmappning (`MOTTAGARE`) och
+församlingsalias (`FORSAMLINGAR`). Vid `init_db()` fröas de till SQLite-tabellerna
+`mottagare`/`forsamling` om de är tomma. Den redigerbara konfigen (vy `/konfig`)
+ändrar DB-raderna, inte config.py.
+
+`normalize.py` håller namnuppslagen som modulglobaler som byggs om via
+`satt_konfig(forsamlingar, mottagare)`. Vid import initieras de med config-frödata
+(så tester/CLI fungerar utan DB); vid appstart och efter varje konfigändring laddar
+`konfig_service.ladda_konfig_till_minne()` in DB-konfigen. Ändamålskalendern är
+INTE i DB - Excel-filen är sanningskälla (fastställt beslut).
 
 ## Köra
 

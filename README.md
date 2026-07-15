@@ -33,8 +33,12 @@ Rapporter registreras med innehålls-hash (idempotens: samma rapport
 dubbelregistreras inte; en ändrad version flaggas), och dashboarden visar en
 översikt över importerade månader.
 
-Kommande: historik på regeländringar och redigerbar konfiguration (Fas 2 forts.),
-halvautomatisk KOB-inmatning (Fas 3).
+Regeländringar (överstyrningar/särskilda poster) loggas med tidpunkt och
+beskrivning (`/justeringar`). Mottagarmappning och församlingsalias är flyttade
+till SQLite och redigerbara i `/konfig`; okända mottagare kan klassas direkt från
+`/omatchade`. Ändamålskalendern förblir Excel-filen (sanningskälla).
+
+Kommande: halvautomatisk KOB-inmatning (Fas 3).
 
 ## Köra
 

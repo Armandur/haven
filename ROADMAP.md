@@ -53,13 +53,13 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 - [x] Historik på regeländringar (`regelhistorik`-tabell, visas på `/justeringar`):
   skapad/borttagen loggas med tidpunkt och beskrivning. ("Vem" saknas tills auth
   finns - enanvändarmiljö.)
-- [ ] Kvar nedan:
+- [x] Redigerbar konfiguration (`/konfig`): mottagarmappning och församlingsalias
+  flyttade till SQLite (fröade från config), redigerbara i UI:t. Nya/okända
+  mottagare kan klassas direkt från `/omatchade`. Normaliseringen laddas om vid
+  ändring. Grunden för att andra enheter ska kunna använda verktyget utan
+  kodändring. (Ändamålskalendern förblir Excel-filen - fastställt beslut.)
 
-- Flytta mottagarmappning, församlingsalias och ändamålskalender till SQLite och
-  gör dem **redigerbara i ett gränssnitt**. Detta är förutsättningen för att
-  verktyget ska kunna bli generellt och användas av andra enheter/pastorat utan
-  kodändring (påsatt todo). Byggs när det finns konkret efterfrågan från fler
-  enheter - inte spekulativt i förväg.
+**Fas 2 klar.**
 
 ## Fas 3 - bekvämlighet
 

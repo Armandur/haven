@@ -10,7 +10,15 @@ from decimal import Decimal
 from sqlalchemy import String, create_engine, delete, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from app.config import DB_PATH, Kollekttyp
+from app import config
+from app.config import (
+    DB_PATH,
+    Forsamling,
+    Kategori,
+    Kollekttyp,
+    Mottagare,
+    Registreringssatt,
+)
 from app.core.regler import Overstyrning, SarskildPost
 
 
@@ -88,6 +96,26 @@ class SarskildPostRad(Base):
     tidpunkt: Mapped[str] = mapped_column(String, default="")
 
 
+class ForsamlingRad(Base):
+    """Redigerbar forsamlingskonfig (froad fran config.FORSAMLINGAR)."""
+    __tablename__ = "forsamling"
+
+    kanoniskt: Mapped[str] = mapped_column(String, primary_key=True)
+    kortkod: Mapped[str] = mapped_column(String, default="")
+    alias: Mapped[str] = mapped_column(String, default="")   # kommaseparerade
+
+
+class MottagareRad(Base):
+    """Redigerbar mottagarmappning (froad fran config.MOTTAGARE)."""
+    __tablename__ = "mottagare"
+
+    namn: Mapped[str] = mapped_column(String, primary_key=True)
+    kategori: Mapped[str] = mapped_column(String)             # kollekt | gava
+    verksamhet: Mapped[str] = mapped_column(String, default="")
+    registreringssatt: Mapped[str] = mapped_column(String, default="")
+    aktiv: Mapped[int] = mapped_column(default=1)
+
+
 class RegelhistorikRad(Base):
     """Logg over andringar av justeringsregler (sparbarhet, spec 9)."""
     __tablename__ = "regelhistorik"
@@ -121,6 +149,24 @@ engine = create_engine(f"sqlite:///{DB_PATH}", future=True)
 def init_db() -> None:
     Base.metadata.create_all(engine)
     _migrera()
+    _seed_konfig()
+
+
+def _seed_konfig() -> None:
+    """Fro forsamling/mottagare fran config forsta gangen (tomma tabeller)."""
+    with Session(engine) as s:
+        if s.scalars(select(ForsamlingRad).limit(1)).first() is None:
+            for f in config.FORSAMLINGAR:
+                s.add(ForsamlingRad(kanoniskt=f.kanoniskt, kortkod=f.kortkod,
+                                    alias=",".join(f.alias)))
+        if s.scalars(select(MottagareRad).limit(1)).first() is None:
+            for m in config.MOTTAGARE:
+                s.add(MottagareRad(
+                    namn=m.namn, kategori=m.kategori.value,
+                    verksamhet=m.verksamhet or "",
+                    registreringssatt=m.registreringssatt.value if m.registreringssatt else "",
+                    aktiv=1))
+        s.commit()
 
 
 def _migrera() -> None:
@@ -342,6 +388,56 @@ def _logga(period: str, typ: str, handelse: str, beskrivning: str, av_vem: str =
             tidpunkt=_now(), period=period, typ=typ, handelse=handelse,
             beskrivning=beskrivning, av_vem=av_vem))
         s.commit()
+
+
+def las_forsamlingar_konfig() -> tuple[Forsamling, ...]:
+    with Session(engine) as s:
+        rader = s.scalars(select(ForsamlingRad).order_by(ForsamlingRad.kanoniskt)).all()
+        return tuple(
+            Forsamling(r.kanoniskt, r.kortkod,
+                       tuple(a.strip() for a in r.alias.split(",") if a.strip()))
+            for r in rader
+        )
+
+
+def las_mottagare_konfig(endast_aktiva: bool = True) -> tuple[Mottagare, ...]:
+    with Session(engine) as s:
+        rader = s.scalars(select(MottagareRad).order_by(MottagareRad.namn)).all()
+        return tuple(
+            Mottagare(
+                r.namn, Kategori(r.kategori), r.verksamhet or None,
+                Registreringssatt(r.registreringssatt) if r.registreringssatt else None)
+            for r in rader if (r.aktiv or not endast_aktiva)
+        )
+
+
+def spara_mottagare(namn: str, kategori: str, verksamhet: str = "",
+                    registreringssatt: str = "", aktiv: int = 1) -> None:
+    with Session(engine) as s:
+        rad = s.get(MottagareRad, namn)
+        if rad is None:
+            s.add(MottagareRad(namn=namn, kategori=kategori, verksamhet=verksamhet,
+                               registreringssatt=registreringssatt, aktiv=aktiv))
+        else:
+            rad.kategori = kategori
+            rad.verksamhet = verksamhet
+            rad.registreringssatt = registreringssatt
+            rad.aktiv = aktiv
+        s.commit()
+
+
+def ta_bort_mottagare(namn: str) -> None:
+    with Session(engine) as s:
+        s.execute(delete(MottagareRad).where(MottagareRad.namn == namn))
+        s.commit()
+
+
+def spara_forsamling_alias(kanoniskt: str, alias: list[str]) -> None:
+    with Session(engine) as s:
+        rad = s.get(ForsamlingRad, kanoniskt)
+        if rad is not None:
+            rad.alias = ",".join(a.strip() for a in alias if a.strip())
+            s.commit()
 
 
 def las_historik(period: str, limit: int = 50) -> list[Historikpost]:

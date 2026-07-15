@@ -262,3 +262,25 @@ def test_regelhistorik_loggas(tmp_path, monkeypatch):
     h = db.las_historik("2026-05")
     assert len(h) == 2
     assert h[0].handelse == "borttagen"     # nyast först
+
+
+def test_konfig_db_och_normalize(tmp_path, monkeypatch):
+    """DB-konfig fros fran config och slar igenom i namnnormaliseringen."""
+    from sqlalchemy import create_engine
+    from app.config import FORSAMLINGAR, MOTTAGARE
+    from app.core import normalize
+    import app.database as db
+
+    eng = create_engine(f"sqlite:///{tmp_path / 't.db'}", future=True)
+    monkeypatch.setattr(db, "engine", eng)
+    try:
+        db.init_db()   # skapar + fror konfig
+        assert len(db.las_mottagare_konfig()) == len(MOTTAGARE)
+        assert len(db.las_forsamlingar_konfig()) == len(FORSAMLINGAR)
+
+        db.spara_mottagare("Nytt Konto", "gava", "Musik", "manadssumma", 1)
+        normalize.satt_konfig(db.las_forsamlingar_konfig(), db.las_mottagare_konfig())
+        m = normalize.mottagare_fran_namn("Nytt Konto")
+        assert m is not None and m.verksamhet == "Musik"
+    finally:
+        normalize.satt_konfig(FORSAMLINGAR, MOTTAGARE)   # aterstall for ovriga tester

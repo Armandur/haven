@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import init_db
 from app.routes import web
+from app.services.konfig_service import ladda_konfig_till_minne
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -16,6 +17,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    ladda_konfig_till_minne()   # DB-konfig -> namnnormalisering
     yield
 
 

@@ -12,16 +12,22 @@ from app.config import DATA_DIR, FORSAMLINGAR, MOTTAGARE, Kategori, Registrering
 from app.database import (
     angra,
     bekrafta,
+    las_forsamlingar_konfig,
     las_historik,
+    las_mottagare_konfig,
     las_overstyrningar,
     las_rapporter,
     las_sarskilda,
     rapport_andrad,
     skapa_overstyrning,
     skapa_sarskild,
+    spara_forsamling_alias,
+    spara_mottagare,
+    ta_bort_mottagare,
     ta_bort_overstyrning,
     ta_bort_sarskild,
 )
+from app.services.konfig_service import ladda_konfig_till_minne
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
 from app.services.ko_service import KoVy, ladda_ko, standard_rapportfil
@@ -106,6 +112,51 @@ def status(request: Request):
         "vy": vy, "vald": _aktuell_fil(request).name,
         "oversikt": oversikt, "avst": avst,
     })
+
+
+@router.get("/konfig")
+def konfig(request: Request):
+    return templates.TemplateResponse(request, "konfig.html", {
+        "vald": request.query_params.get("fil"),
+        "mottagare": las_mottagare_konfig(endast_aktiva=False),
+        "forsamlingar": las_forsamlingar_konfig(),
+        "forhandsvald_namn": request.query_params.get("namn", ""),
+    })
+
+
+def _redir_konfig(request: Request):
+    fil = request.query_params.get("fil")
+    suffix = f"?fil={fil}" if fil else ""
+    return RedirectResponse(f"/konfig{suffix}", status_code=302)
+
+
+@router.post("/konfig/mottagare/spara")
+async def spara_mottagare_route(
+    request: Request,
+    namn: str = Form(...), kategori: str = Form(...), verksamhet: str = Form(""),
+    registreringssatt: str = Form(""), aktiv: str = Form("on"),
+):
+    if kategori == "kollekt":
+        verksamhet, registreringssatt = "", ""
+    spara_mottagare(namn.strip(), kategori, verksamhet.strip(),
+                    registreringssatt, 1 if aktiv else 0)
+    ladda_konfig_till_minne()
+    return _redir_konfig(request)
+
+
+@router.post("/konfig/mottagare/tabort")
+async def tabort_mottagare_route(request: Request, namn: str = Form(...)):
+    ta_bort_mottagare(namn)
+    ladda_konfig_till_minne()
+    return _redir_konfig(request)
+
+
+@router.post("/konfig/forsamling/alias")
+async def spara_alias_route(request: Request, kanoniskt: str = Form(...),
+                            alias: str = Form("")):
+    spara_forsamling_alias(kanoniskt, alias.split(","))
+    ladda_konfig_till_minne()
+    return _redir_konfig(request)
 
 
 @router.get("/omatchade")

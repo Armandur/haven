@@ -11,7 +11,7 @@
 <figure>
 <table>
   <thead>
-    <tr><th>Datum</th><th>Mottagare</th><th>Meddelande</th><th style="text-align:right">Belopp</th><th>Orsak</th></tr>
+    <tr><th>Datum</th><th>Mottagare</th><th>Meddelande</th><th style="text-align:right">Belopp</th><th>Orsak</th><th></th></tr>
   </thead>
   <tbody>
     {% for t in omatchade %}
@@ -21,6 +21,7 @@
       <td class="hv-swish">{{ t.meddelande }}</td>
       <td style="text-align:right">{{ t.belopp|kr }}</td>
       <td><span class="hv-badge varning">{{ t.omatchad_orsak }}</span></td>
+      <td>{% if 'okänd mottagare' in (t.omatchad_orsak or '') %}<a href="/konfig?namn={{ t.mottagarnamn|urlencode }}{% if vald %}&fil={{ vald|urlencode }}{% endif %}" role="button" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Klassa</a>{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>
