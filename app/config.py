@@ -10,9 +10,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # --- Sokvagar ---------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 DATA_DIR = Path(os.environ.get("HAVEN_DATA_DIR", BASE_DIR / "data"))
 KALENDER_FIL = os.environ.get("HAVEN_KALENDER_FIL", "2026 - Kollektändamål.xlsx")
 DB_PATH = Path(os.environ.get("HAVEN_DB", BASE_DIR / "haven.db"))

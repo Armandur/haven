@@ -49,6 +49,22 @@ def test_inga_omatchade(res):
     assert res.underlag.omatchade == []
 
 
+def test_tillfalle_folas_pa_kalenderdatum(res):
+    """Betalning dagen efter gudstjansten ska folas in pa tillfallet, inte bli
+    egen post. Laser matchad_kalenderdatum-aggregeringen (05-18 -> 05-17)."""
+    from datetime import date
+    jul = [p for p in res.underlag.f_poster
+           if p.forsamling == "Domkyrkoförsamlingen" and p.andamal == "Jul i gemenskap"]
+    assert len(jul) == 1, "Jul i gemenskap ska vara en enda post (05-17)"
+    assert jul[0].datum == date(2026, 5, 17)
+    assert jul[0].belopp == _d("1500.00")
+
+    # R-kollekten ska grupperas pa tillfallet 05-10, inte splittas pa 05-13.
+    r_datum = {g.datum for g in res.underlag.rs_grupper if g.kollekttyp == "R"}
+    assert date(2026, 5, 13) not in r_datum
+    assert date(2026, 5, 10) in r_datum
+
+
 def test_gava_manadssummor(res):
     per = {p.verksamhet: p.belopp for p in res.underlag.gava_manad}
     assert per["ACT Svenska Kyrkan"] == _d("6656.00")
