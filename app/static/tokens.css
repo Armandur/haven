@@ -142,11 +142,9 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-post.typ-kant-r { border-left-color: var(--hv-typ-r); }
 .hv-post.typ-kant-s { border-left-color: var(--hv-typ-s); }
 .hv-post.typ-kant-f { border-left-color: var(--hv-typ-f); }
-.hv-breakin-mark {
-  display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--pico-muted-color);
-  border: 1px dashed var(--pico-muted-border-color); border-radius: 4px; padding: 0 0.35rem;
-}
+.hv-tx-grupp { margin-top: 0.6rem; }
+.hv-tx-grupprubrik { margin: 0 0 0.2rem; font-size: 0.85rem; }
+.hv-tx-grupprubrik strong { color: var(--hv-accent); }
 
 .hv-post details.hv-tx { margin-top: 0.5rem; }
 .hv-post details.hv-tx summary {

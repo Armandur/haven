@@ -6,7 +6,6 @@
          data-nyckel="{{ p.nyckel }}">
   <header>
     <div>
-      {% if breakin %}<span class="hv-breakin-mark">bryter in</span> {% endif %}
       <span class="hv-badge typ-{{ p.typ_kod|lower }}">{{ p.typ_etikett }}</span>
       <strong>{{ p.rubrik }}</strong>
       <span class="hv-badge klar" data-roll="klarmarke" {% if not p.bekraftad %}hidden{% endif %}>✓ registrerad</span>
@@ -36,24 +35,41 @@
   {% if p.transaktioner %}
   <details class="hv-tx">
     <summary>Visa {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}</summary>
+    {% if p.grupp == 'R/S' and p.delposter %}
+      {% for d in p.delposter %}
+      <div class="hv-tx-grupp">
+        <p class="hv-tx-grupprubrik"><strong>{{ d.forsamling }}</strong>
+          <span class="hv-swish">{{ d.belopp|kr }} kr · {{ d.antal }} tx</span></p>
+        <table>
+          <thead><tr><th>Datum</th><th>Tid</th><th style="text-align:right">Belopp</th><th>Meddelande</th></tr></thead>
+          <tbody>
+            {% for t in d.transaktioner|sort(attribute='trans_datum,tid') %}
+            <tr>
+              <td>{{ t.trans_datum }}</td>
+              <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
+              <td style="text-align:right">{{ t.belopp|kr }}</td>
+              <td class="hv-swish">{{ t.meddelande }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+    {% else %}
     <table>
-      <thead><tr>
-        <th>Datum</th><th>Tid</th>
-        {% if p.grupp == 'R/S' %}<th>Församling</th>{% endif %}
-        <th style="text-align:right">Belopp</th><th>Meddelande</th>
-      </tr></thead>
+      <thead><tr><th>Datum</th><th>Tid</th><th style="text-align:right">Belopp</th><th>Meddelande</th></tr></thead>
       <tbody>
         {% for t in p.transaktioner|sort(attribute='trans_datum,tid') %}
         <tr>
           <td>{{ t.trans_datum }}</td>
           <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
-          {% if p.grupp == 'R/S' %}<td>{{ t.mottagarnamn }}</td>{% endif %}
           <td style="text-align:right">{{ t.belopp|kr }}</td>
           <td class="hv-swish">{{ t.meddelande }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    {% endif %}
   </details>
   {% endif %}
 
