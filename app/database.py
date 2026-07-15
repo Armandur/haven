@@ -31,6 +31,17 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _beskriv_urval(tx_ids, meddelande_filter, datum_fran, datum_till) -> str:
+    if tx_ids:
+        return f"{len(tx_ids)} markerade rader"
+    delar = []
+    if meddelande_filter:
+        delar.append(f'"{meddelande_filter}"')
+    if datum_fran or datum_till:
+        delar.append(f"{datum_fran or ''}–{datum_till or ''}")
+    return " ".join(delar) or "filter"
+
+
 class Bekraftelse(Base):
     """En bekraftad registreringspost i arbetskon (idempotent pa nyckel)."""
     __tablename__ = "bekraftelse"
@@ -75,6 +86,19 @@ class SarskildPostRad(Base):
     datum_till: Mapped[str] = mapped_column(String, default="")
     av_vem: Mapped[str] = mapped_column(String, default="")
     tidpunkt: Mapped[str] = mapped_column(String, default="")
+
+
+class RegelhistorikRad(Base):
+    """Logg over andringar av justeringsregler (sparbarhet, spec 9)."""
+    __tablename__ = "regelhistorik"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tidpunkt: Mapped[str] = mapped_column(String, default="")
+    period: Mapped[str] = mapped_column(String, index=True)
+    typ: Mapped[str] = mapped_column(String)          # "overstyrning" | "sarskild"
+    handelse: Mapped[str] = mapped_column(String)     # "skapad" | "borttagen"
+    beskrivning: Mapped[str] = mapped_column(String, default="")
+    av_vem: Mapped[str] = mapped_column(String, default="")
 
 
 class RapportRad(Base):
@@ -176,12 +200,23 @@ def skapa_overstyrning(period: str, forsamling: str, ny_andamal: str,
             datum_till=datum_till, orsak=orsak, av_vem=av_vem, tidpunkt=_now(),
         ))
         s.commit()
+    urval = _beskriv_urval(tx_ids, meddelande_filter, datum_fran, datum_till)
+    _logga(period, "overstyrning", "skapad",
+           f"{forsamling or '—'} → {ny_andamal} ({urval})", av_vem)
 
 
 def ta_bort_overstyrning(id: int) -> None:
     with Session(engine) as s:
-        s.execute(delete(OverstyrningRad).where(OverstyrningRad.id == id))
+        rad = s.get(OverstyrningRad, id)
+        if rad is None:
+            return
+        period = rad.period
+        urval = _beskriv_urval(_ptxids(rad.tx_ids), rad.meddelande_filter,
+                               rad.datum_fran, rad.datum_till)
+        beskrivning = f"{rad.forsamling or '—'} → {rad.ny_andamal} ({urval})"
+        s.delete(rad)
         s.commit()
+    _logga(period, "overstyrning", "borttagen", beskrivning)
 
 
 # --- Sarskilda poster -------------------------------------------------------
@@ -214,12 +249,22 @@ def skapa_sarskild(period: str, verksamhet: str, namn: str, oronmarkning: str = 
             datum_fran=datum_fran, datum_till=datum_till, av_vem=av_vem, tidpunkt=_now(),
         ))
         s.commit()
+    urval = _beskriv_urval(tx_ids, meddelande_filter, datum_fran, datum_till)
+    _logga(period, "sarskild", "skapad", f"{verksamhet} / {namn} ({urval})", av_vem)
 
 
 def ta_bort_sarskild(id: int) -> None:
     with Session(engine) as s:
-        s.execute(delete(SarskildPostRad).where(SarskildPostRad.id == id))
+        rad = s.get(SarskildPostRad, id)
+        if rad is None:
+            return
+        period = rad.period
+        urval = _beskriv_urval(_ptxids(rad.tx_ids), rad.meddelande_filter,
+                               rad.datum_fran, rad.datum_till)
+        beskrivning = f"{rad.verksamhet} / {rad.namn} ({urval})"
+        s.delete(rad)
         s.commit()
+    _logga(period, "sarskild", "borttagen", beskrivning)
 
 
 # --- Rapportregister --------------------------------------------------------
@@ -278,3 +323,35 @@ def rapport_andrad(filnamn: str) -> bool:
     with Session(engine) as s:
         rad = s.get(RapportRad, filnamn)
         return bool(rad and rad.andrad)
+
+
+# --- Regelhistorik ----------------------------------------------------------
+
+@dataclass
+class Historikpost:
+    tidpunkt: str
+    typ: str
+    handelse: str
+    beskrivning: str
+    av_vem: str
+
+
+def _logga(period: str, typ: str, handelse: str, beskrivning: str, av_vem: str = "") -> None:
+    with Session(engine) as s:
+        s.add(RegelhistorikRad(
+            tidpunkt=_now(), period=period, typ=typ, handelse=handelse,
+            beskrivning=beskrivning, av_vem=av_vem))
+        s.commit()
+
+
+def las_historik(period: str, limit: int = 50) -> list[Historikpost]:
+    with Session(engine) as s:
+        rader = s.scalars(
+            select(RegelhistorikRad).where(RegelhistorikRad.period == period)
+            .order_by(RegelhistorikRad.id.desc()).limit(limit)
+        ).all()
+        return [
+            Historikpost(tidpunkt=r.tidpunkt, typ=r.typ, handelse=r.handelse,
+                         beskrivning=r.beskrivning, av_vem=r.av_vem)
+            for r in rader
+        ]

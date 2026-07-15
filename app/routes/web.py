@@ -12,6 +12,7 @@ from app.config import DATA_DIR, FORSAMLINGAR, MOTTAGARE, Kategori, Registrering
 from app.database import (
     angra,
     bekrafta,
+    las_historik,
     las_overstyrningar,
     las_rapporter,
     las_sarskilda,
@@ -155,6 +156,7 @@ def justeringar(request: Request):
         "avst": resultat, "sar_effekt": sar_effekt,
         "ov_forsamling": ov_forsamling, "sar_verksamhet": sar_verksamhet,
         "ov_rader": ov_rader, "sar_rader": sar_rader,
+        "historik": las_historik(period),
     })
 
 

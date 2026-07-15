@@ -241,3 +241,24 @@ def test_rapportregister_idempotens_och_andring(tmp_path, monkeypatch):
     assert db.registrera_rapport("f.xlsx", "2026-05", "H2", 515, "30692.00") is True
     assert db.rapport_andrad("f.xlsx") is True                # latchad
     assert len(db.las_rapporter()) == 1
+
+
+def test_regelhistorik_loggas(tmp_path, monkeypatch):
+    """Skapa/ta bort en regel ska logga skapad/borttagen med beskrivning."""
+    from sqlalchemy import create_engine
+    import app.database as db
+    eng = create_engine(f"sqlite:///{tmp_path / 't.db'}", future=True)
+    monkeypatch.setattr(db, "engine", eng)
+    db.Base.metadata.create_all(eng)
+
+    db.skapa_sarskild("2026-05", "Musik", "Konsert", meddelande_filter="konsert")
+    h = db.las_historik("2026-05")
+    assert len(h) == 1
+    assert h[0].typ == "sarskild" and h[0].handelse == "skapad"
+    assert "Musik / Konsert" in h[0].beskrivning
+
+    sid = db.las_sarskilda("2026-05")[0].id
+    db.ta_bort_sarskild(sid)
+    h = db.las_historik("2026-05")
+    assert len(h) == 2
+    assert h[0].handelse == "borttagen"     # nyast först

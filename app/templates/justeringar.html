@@ -187,4 +187,24 @@ som ska brytas ut ur månadssumman och registreras separat.</p>
   </div>
   {% endif %}
 </article>
+
+{# ===================== HISTORIK ===================== #}
+<h2>Historik</h2>
+{% if not historik %}
+<p class="hv-tomt">Inga ändringar loggade för {{ period }}.</p>
+{% else %}
+<figure><table>
+  <thead><tr><th>Tidpunkt</th><th>Typ</th><th>Händelse</th><th>Beskrivning</th></tr></thead>
+  <tbody>
+    {% for h in historik %}
+    <tr>
+      <td class="hv-swish">{{ h.tidpunkt|replace('T', ' ') }}</td>
+      <td>{% if h.typ == 'overstyrning' %}Överstyrning{% else %}Särskild post{% endif %}</td>
+      <td>{% if h.handelse == 'skapad' %}<span class="hv-badge klar">skapad</span>{% else %}<span class="hv-badge varning">borttagen</span>{% endif %}</td>
+      <td>{{ h.beskrivning }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+{% endif %}
 {% endblock %}

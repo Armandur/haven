@@ -50,9 +50,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   rapport dubbelregistrerar inte, och en ändrad version (ny innehålls-hash på samma
   filnamn) flaggas så tx_id-baserade regler kan ses över. Månadsöversikt på
   dashboarden.
+- [x] Historik på regeländringar (`regelhistorik`-tabell, visas på `/justeringar`):
+  skapad/borttagen loggas med tidpunkt och beskrivning. ("Vem" saknas tills auth
+  finns - enanvändarmiljö.)
 - [ ] Kvar nedan:
 
-- Historik på överstyrningar/särskilda poster (skapad/borttagen, vem/när).
 - Flytta mottagarmappning, församlingsalias och ändamålskalender till SQLite och
   gör dem **redigerbara i ett gränssnitt**. Detta är förutsättningen för att
   verktyget ska kunna bli generellt och användas av andra enheter/pastorat utan
