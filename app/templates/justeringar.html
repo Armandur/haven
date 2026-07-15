@@ -71,8 +71,8 @@ kalendern).</p>
       <table class="hv-radtabell">
         <thead><tr>
           <th><input type="checkbox" class="hv-markera-alla" title="Markera alla synliga"></th>
-          <th>Datum</th><th>Tid</th><th>Nuv. ändamål</th><th>Typ</th>
-          <th style="text-align:right">Belopp</th><th>Meddelande</th>
+          <th>Datum</th><th>Tid</th><th>Meddelande</th><th>Typ</th>
+          <th style="text-align:right">Belopp</th><th>Nuv. ändamål</th>
         </tr></thead>
         <tbody>
           {% for t in ov_rader %}
@@ -81,10 +81,10 @@ kalendern).</p>
             <td><input type="checkbox" class="hv-valj" name="tx_ids" value="{{ t.tx_id }}"></td>
             <td>{{ t.trans_datum }}</td>
             <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
-            <td>{{ t.andamal or '-' }}{% if t.overstyrd %} <span class="hv-badge varning">överstyrd</span>{% endif %}</td>
+            <td class="hv-swish">{{ t.meddelande }}</td>
             <td>{{ t.kollekttyp.value if t.kollekttyp else '' }}</td>
             <td style="text-align:right">{{ t.belopp|kr }}</td>
-            <td class="hv-swish">{{ t.meddelande }}</td>
+            <td>{{ t.andamal or '-' }}{% if t.overstyrd %} <span class="hv-badge varning">överstyrd</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>

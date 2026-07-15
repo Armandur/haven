@@ -111,6 +111,22 @@
     table.addEventListener("change", function (e) {
       if (e.target.classList.contains("hv-valj")) uppdatera();
     });
+
+    // Skift+klick markerar intervallet av synliga rader mellan senaste och nuvarande.
+    var sistaIdx = null;
+    table.addEventListener("click", function (e) {
+      var cb = e.target;
+      if (!cb.classList || !cb.classList.contains("hv-valj")) return;
+      var idx = rows.indexOf(cb.closest("tr"));
+      if (e.shiftKey && sistaIdx !== null && idx !== -1) {
+        var lo = Math.min(sistaIdx, idx), hi = Math.max(sistaIdx, idx);
+        for (var i = lo; i <= hi; i++) {
+          if (!rows[i].hidden) rows[i].querySelector(".hv-valj").checked = cb.checked;
+        }
+        uppdatera();
+      }
+      sistaIdx = idx;
+    });
     if (allC) allC.addEventListener("change", function () {
       rows.forEach(function (r) {
         if (!r.hidden) r.querySelector(".hv-valj").checked = allC.checked;
