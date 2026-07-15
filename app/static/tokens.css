@@ -83,6 +83,13 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-badge.klar { background: var(--hv-ok-bg); color: var(--hv-ok); }
 .hv-badge.varning { background: var(--hv-varning-bg); color: var(--hv-varning); }
 
+.hv-post details.hv-tx { margin-top: 0.5rem; }
+.hv-post details.hv-tx summary {
+  cursor: pointer; font-size: 0.85rem; color: var(--hv-accent); font-weight: 600;
+}
+.hv-post details.hv-tx table { font-size: 0.82rem; margin-top: 0.5rem; }
+.hv-post details.hv-tx td, .hv-post details.hv-tx th { padding: 0.2rem 0.4rem; }
+
 .hv-swish { font-size: 0.8rem; color: var(--pico-muted-color); }
 .hv-tomt { color: var(--pico-muted-color); font-style: italic; }
 [hidden] { display: none !important; }

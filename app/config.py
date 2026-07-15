@@ -64,14 +64,16 @@ class Forsamling:
     alias: tuple[str, ...] = field(default_factory=tuple)
 
 
+# Kanoniskt namn = KOB-formen (det handlaggaren ser och skriver i KOB).
+# Swish-stavningen och andra varianter ligger som alias.
 FORSAMLINGAR: tuple[Forsamling, ...] = (
-    Forsamling("Domkyrkoförsamlingen", "DK", ("Härnösands domkyrkoförsamling",)),
-    Forsamling("Hemsö Församling", "HE", ("Hemsö församling",)),
-    Forsamling("Häggdångers Församling", "HÄ", ("Häggdångers församling",)),
-    Forsamling("Högsjö Församling", "HÖ", ("Högsjö församling",)),
-    Forsamling("Stigsjö Församling", "ST", ("Stigsjö församling",)),
-    Forsamling("Säbrå Församling", "SÄ", ("Säbrå församling",)),
-    Forsamling("Viksjö Församling", "VI", ("Viksjö församling",)),
+    Forsamling("Härnösands domkyrkoförsamling", "DK", ("Domkyrkoförsamlingen",)),
+    Forsamling("Hemsö församling", "HE", ("Hemsö Församling",)),
+    Forsamling("Häggdångers församling", "HÄ", ("Häggdångers Församling",)),
+    Forsamling("Högsjö församling", "HÖ", ("Högsjö Församling",)),
+    Forsamling("Stigsjö församling", "ST", ("Stigsjö Församling",)),
+    Forsamling("Säbrå församling", "SÄ", ("Säbrå Församling",)),
+    Forsamling("Viksjö församling", "VI", ("Viksjö Församling",)),
 )
 
 

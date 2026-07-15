@@ -54,7 +54,7 @@ def test_tillfalle_folas_pa_kalenderdatum(res):
     egen post. Laser matchad_kalenderdatum-aggregeringen (05-18 -> 05-17)."""
     from datetime import date
     jul = [p for p in res.underlag.f_poster
-           if p.forsamling == "Domkyrkoförsamlingen" and p.andamal == "Jul i gemenskap"]
+           if p.forsamling == "Härnösands domkyrkoförsamling" and p.andamal == "Jul i gemenskap"]
     assert len(jul) == 1, "Jul i gemenskap ska vara en enda post (05-17)"
     assert jul[0].datum == date(2026, 5, 17)
     assert jul[0].belopp == _d("1500.00")

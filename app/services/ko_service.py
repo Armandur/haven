@@ -12,6 +12,7 @@ from pathlib import Path
 
 from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp
 from app.core.aggregate import Underlag
+from app.core.models import Transaktion
 from app.core.pipeline import Pipelineresultat, kor_pipeline
 from app.database import bekraftade_nycklar
 
@@ -21,6 +22,7 @@ class Delpost:
     forsamling: str
     belopp: Decimal
     antal: int
+    transaktioner: list[Transaktion] = field(default_factory=list)
 
 
 @dataclass
@@ -37,6 +39,7 @@ class Kopost:
     period: str | None = None
     inbetalningsmetod: str = INBETALNINGSMETOD
     delposter: list[Delpost] = field(default_factory=list)
+    transaktioner: list[Transaktion] = field(default_factory=list)
     bekraftad: bool = False
     kraver_manuell_andamal: bool = False
 
@@ -68,17 +71,20 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
             rubrik=f"{p.forsamling} - {p.datum:%Y-%m-%d}",
             belopp=p.belopp, antal=p.antal, forsamling=p.forsamling,
             datum=p.datum, andamal=p.andamal, bekraftad=nyckel in bekr,
+            transaktioner=p.transaktioner,
         ))
 
     for g in underlag.rs_grupper:
         typ = Kollekttyp(g.kollekttyp)
         nyckel = _rs_nyckel(g.kollekttyp, g.datum, g.andamal)
+        delposter = [Delpost(d.forsamling, d.belopp, d.antal, d.transaktioner)
+                     for d in g.delposter]
         poster.append(Kopost(
             nyckel=nyckel, grupp="R/S", typ_etikett=typ.kob_namn,
             rubrik=f"{typ.kob_namn} - {g.datum:%Y-%m-%d}",
             belopp=g.summa, antal=g.antal, datum=g.datum, andamal=g.andamal,
-            delposter=[Delpost(d.forsamling, d.belopp, d.antal) for d in g.delposter],
-            bekraftad=nyckel in bekr,
+            delposter=delposter, bekraftad=nyckel in bekr,
+            transaktioner=[t for d in delposter for t in d.transaktioner],
         ))
 
     for p in underlag.gava_manad:
@@ -88,6 +94,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
             rubrik=f"{p.verksamhet} - {p.period}",
             belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
             period=p.period, bekraftad=nyckel in bekr,
+            transaktioner=p.transaktioner,
         ))
 
     for p in underlag.gava_per_andamal:
@@ -98,6 +105,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
             belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
             andamal=p.andamal, period=p.period, bekraftad=nyckel in bekr,
             kraver_manuell_andamal=p.kraver_manuell_andamal,
+            transaktioner=p.transaktioner,
         ))
 
     return poster

@@ -49,6 +49,30 @@
   <p class="hv-swish">Registreras på ett gemensamt tillfälle i KOB (alla församlingars belopp).</p>
   {% endif %}
 
+  {% if p.transaktioner %}
+  <details class="hv-tx">
+    <summary>Visa {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}</summary>
+    <table>
+      <thead><tr>
+        <th>Datum</th><th>Tid</th>
+        {% if p.grupp == 'R/S' %}<th>Församling</th>{% endif %}
+        <th style="text-align:right">Belopp</th><th>Meddelande</th>
+      </tr></thead>
+      <tbody>
+        {% for t in p.transaktioner|sort(attribute='trans_datum,tid') %}
+        <tr>
+          <td>{{ t.trans_datum }}</td>
+          <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
+          {% if p.grupp == 'R/S' %}<td>{{ t.mottagarnamn }}</td>{% endif %}
+          <td style="text-align:right">{{ t.belopp|kr }}</td>
+          <td class="hv-swish">{{ t.meddelande }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+
   <div class="hv-knappar" data-roll="knappar">
     <form method="post" action="/ko/bekrafta" data-roll="bekrafta-form" {% if p.bekraftad %}hidden{% endif %}>
       <input type="hidden" name="nyckel" value="{{ p.nyckel }}">
