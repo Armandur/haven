@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block titel %}Avstämning{% endblock %}
+{% block content %}
+{% set rap = vy.resultat.rapport %}
+<h1>Avstämning mot KOB - {{ rap.period }}</h1>
+
+{% if avst.saknade %}
+<article><p class="hv-badge varning">Saknar: {{ avst.saknade|join(", ") }}. Lägg filen i data-katalogen.</p></article>
+{% endif %}
+<p class="hv-meta">
+  {% if avst.kob_kollekt_fil %}Kollekt: <code>{{ avst.kob_kollekt_fil }}</code>{% endif %}
+  {% if avst.kob_insamling_fil %} · Insamling: <code>{{ avst.kob_insamling_fil }}</code>{% endif %}
+  · Endast KOB:s <strong>Swish 1</strong>-rader jämförs.
+</p>
+
+{% if avst.kollekt %}
+<h2>Kollekter - per församling och tillfälle</h2>
+<div class="grid">
+  <div><small>Swish totalt</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.swish_total|kr }} kr</strong></div>
+  <div><small>KOB totalt (Swish 1)</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.kob_total|kr }} kr</strong></div>
+  <div><small>Tillfällen med diff</small><br>
+    <strong style="font-size:1.3rem;" class="{% if avst.kollekt.antal_diffar %}hv-badge varning{% endif %}">{{ avst.kollekt.antal_diffar }}</strong></div>
+</div>
+
+{% for f in avst.kollekt.forsamlingar %}
+<article class="hv-post {% if f.har_diff %}{% else %}hv-klar{% endif %}">
+  <header>
+    <div>
+      <strong>{{ f.forsamling }}</strong>
+      {% if f.diff == 0 %}<span class="hv-badge klar">✓ nettar</span>
+      {% else %}<span class="hv-badge varning">netto {{ f.diff|kr }} kr</span>{% endif %}
+    </div>
+    <span class="hv-meta">Swish {{ f.swish_total|kr }} · KOB {{ f.kob_total|kr }}</span>
+  </header>
+  <table>
+    <thead><tr>
+      <th>Datum</th><th>Typ</th><th>Ändamål (Swish → KOB)</th>
+      <th style="text-align:right">Swish</th><th style="text-align:right">KOB</th>
+      <th style="text-align:right">Diff</th><th>Status</th>
+    </tr></thead>
+    <tbody>
+      {% for r in f.rader %}
+      <tr>
+        <td>{{ r.datum or "-" }}</td>
+        <td>{% if r.kollekttyp %}<span class="hv-badge {% if r.kollekttyp == 'F' %}f{% else %}rs{% endif %}">{{ r.kollekttyp }}</span>{% endif %}</td>
+        <td class="hv-meta">
+          {{ r.swish_andamal or "-" }}{% if r.kob_andamal and r.kob_andamal != r.swish_andamal %} <span class="hv-swish">→ {{ r.kob_andamal }}</span>{% endif %}
+        </td>
+        <td style="text-align:right">{{ r.swish|kr }}</td>
+        <td style="text-align:right">{{ r.kob|kr }}</td>
+        <td style="text-align:right">{% if r.diff != 0 %}<strong>{{ r.diff|kr }}</strong>{% else %}0,00{% endif %}</td>
+        <td>
+          {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
+          {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">notis</span>
+          {% else %}<span class="hv-badge varning" title="{{ r.orsak }}">diff</span>{% endif %}
+          {% if r.orsak %}<span class="hv-swish"> {{ r.orsak }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</article>
+{% endfor %}
+{% endif %}
+
+{% if avst.gava %}
+<h2>Gåvor - per verksamhet/konto</h2>
+<figure><table>
+  <thead><tr>
+    <th>Verksamhet</th><th style="text-align:right">Swish</th><th style="text-align:right">KOB</th>
+    <th style="text-align:right">Diff</th><th>Status</th>
+  </tr></thead>
+  <tbody>
+    {% for r in avst.gava.rader %}
+    <tr>
+      <td>{{ r.verksamhet }}
+        {% if r.kob_detaljer %}<br><span class="hv-swish">{% for d in r.kob_detaljer %}{{ d.beskrivning }} ({{ d.belopp|kr }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+      </td>
+      <td style="text-align:right">{{ r.swish|kr }}</td>
+      <td style="text-align:right">{{ r.kob|kr }}</td>
+      <td style="text-align:right">{% if r.diff != 0 %}<strong>{{ r.diff|kr }}</strong>{% else %}0,00{% endif %}</td>
+      <td>
+        {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
+        {% else %}<span class="hv-badge varning">diff</span> <span class="hv-swish">{{ r.orsak }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+{% if avst.gava.omappade %}
+<p class="hv-meta">KOB-rader som inte kunde kopplas till en verksamhet:</p>
+<ul>{% for d in avst.gava.omappade %}<li class="hv-swish">{{ d.beskrivning }} - {{ d.belopp|kr }} kr</li>{% endfor %}</ul>
+{% endif %}
+<p class="hv-swish">Musik och Gåvomedelskassan väntas sakna KOB-rader tills de registrerats. Särskilda poster (utbrytning ur månadssumman) byggs i nästa steg.</p>
+{% endif %}
+{% endblock %}

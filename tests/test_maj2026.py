@@ -10,11 +10,13 @@ from pathlib import Path
 import pytest
 
 from app.config import DATA_DIR, KALENDER_FIL
-from app.core.ingest_kob import las_kob_kollekt
+from app.core.ingest_kob import las_kob_insamling, las_kob_kollekt
 from app.core.pipeline import kor_pipeline
+from app.core.reconcile import avstam_gava, avstam_kollekt
 
 SWISH = DATA_DIR / "1948 25-05 Uppdelad.xlsx"
 KOB_KOLLEKT = DATA_DIR / "KOB_ParishCollectionReport (18).xls"
+KOB_INSAMLING = DATA_DIR / "KOB_Accounts_Contributions (15).xls"
 
 pytestmark = pytest.mark.skipif(
     not (SWISH.exists() and (DATA_DIR / KALENDER_FIL).exists()),
@@ -88,3 +90,31 @@ def test_kollekt_per_forsamling_mot_kob(res):
 
     for fors, belopp in kob.items():
         assert swish.get(fors) == belopp, f"{fors}: swish {swish.get(fors)} != kob {belopp}"
+
+
+def test_kollekt_avstamning_nettar_per_forsamling(res):
+    avst = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
+    assert avst.swish_total == _d("10076.00")
+    assert avst.swish_total == avst.kob_total
+    for f in avst.forsamlingar:
+        assert f.diff == _d("0.00"), f"{f.forsamling} nettar inte: {f.diff}"
+
+
+def test_stigsjo_visar_tva_motverkande_diffar(res):
+    avst = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
+    stigsjo = next(f for f in avst.forsamlingar if f.forsamling == "Stigsjö församling")
+    diffar = [r for r in stigsjo.rader if r.status == "diff"]
+    assert len(diffar) == 2
+    assert {r.diff for r in diffar} == {_d("1120.00"), _d("-1120.00")}
+    assert stigsjo.diff == _d("0.00")
+
+
+def test_gava_avstamning(res):
+    avst = avstam_gava(res.underlag, las_kob_insamling(KOB_INSAMLING))
+    per = {r.verksamhet: r for r in avst.rader}
+    assert per["ACT Svenska Kyrkan"].status == "ok"
+    assert per["ACT Svenska Kyrkan"].kob == _d("6656.00")
+    assert per["Diakoni"].status == "ok"
+    assert per["Diakoni"].kob == _d("1885.00")
+    assert per["Musik"].status == "diff"
+    assert per["Gåvomedelskassan"].status == "diff"

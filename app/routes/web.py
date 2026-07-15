@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from app.config import DATA_DIR
 from app.database import angra, bekrafta
 from app.deps import templates
+from app.services.avstamning_service import kor_avstamning
 from app.services.ko_service import KoVy, ladda_ko, standard_rapportfil
 
 router = APIRouter()
@@ -86,6 +87,15 @@ def omatchade(request: Request):
     vy = _vy(request)
     return templates.TemplateResponse(request, "omatchade.html", {
         "vy": vy, "vald": _aktuell_fil(request).name,
+    })
+
+
+@router.get("/avstamning")
+def avstamning(request: Request):
+    vy = _vy(request)
+    resultat = kor_avstamning(vy.resultat)
+    return templates.TemplateResponse(request, "avstamning.html", {
+        "vy": vy, "avst": resultat, "vald": _aktuell_fil(request).name,
     })
 
 

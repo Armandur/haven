@@ -32,6 +32,7 @@ app/
     classify.py        # kollekt/gåva via mottagarmappning
     match.py           # ändamålsmatchning (framåtfyllning, Kalenderindex)
     aggregate.py       # registreringsunderlag (F / R-S-grupper / gåva)
+    reconcile.py       # KOB-avstämning (kollekt per tillfälle, gåva per konto)
     pipeline.py        # orkestrering filer -> Underlag
   routes/              # FastAPI-routes (webbvy)
   templates/ static/   # Jinja2 + Pico CSS + tokens.css

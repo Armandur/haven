@@ -21,15 +21,22 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   Swish- och KOB-formerna som alias. Låg insats, avviker medvetet från spec 6.4
   som listade Swish-formen som kanonisk.
 
-## Fas 1 - särskilda poster + KOB-avstämning
+## Fas 1a - KOB-avstämning (klar)
+
+- [x] Avstämning per församling och tillfälle (`reconcile.py`, vy `/avstamning`).
+  Endast `Swish 1`-rader jämförs, nettorollup per församling.
+- [x] Ändamålstext-normalisering mellan kalender och KOB ("Svenska Kyrkans Unga
+  ½, ..." vs "Svenska Kyrkans Unga / ...").
+- [x] Gåvoavstämning per konto med nyckelordsmappning mot KOB-insamlingsrader.
+
+## Fas 1b - särskilda poster + ändamålsöverstyrning
 
 - Utbrytning av särskilda poster (filter på meddelande/datum), t.ex. loppis, ljus.
-- Inläsning av KOB-exporterna finns redan (`ingest_kob.py`); bygg avstämning per
-  församling och tillfälle med tydliga diffar. Endast `Swish 1`-rader jämförs.
-- Ändamålstext-normalisering mellan kalender och KOB (t.ex. "Svenska Kyrkans
-  Unga" vs "Svenska Kyrkans Unga / SALT, barn och unga i EFS").
+  Markera urval, namnge posten, bryt ut ur månadssumman (delarna = kontototalen).
+  Feed:ar in i gåvoavstämningen (t.ex. "Act exkl loppis").
 - Manuell överstyrning av föreslaget ändamål (spec 8.3) - fångar Stigsjö-typen
-  där framåtfyllningen är "rätt enligt regeln" men avviker mot KOB.
+  där framåtfyllningen är "rätt enligt regeln" men avviker mot KOB (05-17
+  Diakonala vs KOB 05-23 Musik). Spara överstyrningen med historik.
 
 ## Fas 2 - tillstånd, status och redigerbar konfiguration
 

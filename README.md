@@ -15,7 +15,12 @@ Se `SPEC.md` för fullständig kravspecifikation och `CLAUDE.md` för kodbasöve
 Validerad mot maj 2026 (kollekt per församling och gåva-månadssummor stämmer
 mot KOB på öret).
 
-Kommande faser: särskilda poster + KOB-avstämning (Fas 1), SQLite-tillstånd och
+**Fas 1a (klar):** KOB-avstämning per församling och tillfälle (kollekt) och
+per konto (gåva), med diff-flaggning och nettorollup per församling. Endast
+KOB:s Swish 1-rader jämförs. Validerad mot maj 2026 (alla församlingar nettar,
+Stigsjö-avvikelsen fångas som två motverkande diffar).
+
+Kommande: särskilda poster + ändamålsöverstyrning (Fas 1b), SQLite-tillstånd och
 statusspårning (Fas 2), halvautomatisk KOB-inmatning (Fas 3).
 
 ## Köra

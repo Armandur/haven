@@ -39,6 +39,19 @@ def mottagare_fran_namn(namn: str | None) -> Mottagare | None:
     return _MOTT_LOOKUP.get(_nyckel(namn))
 
 
+def normalisera_andamal(s: str | None) -> str:
+    """Jamforelsenyckel for andamalstext mellan kalender och KOB.
+
+    Kalendern skriver t.ex. 'Svenska Kyrkans Unga ½, SALT, barn och unga i EFS ½'
+    dar KOB har 'Svenska Kyrkans Unga / SALT, barn och unga i EFS'. Vi tar bort
+    andelstecken och skiljetecken och jamfor pa ordinnehallet.
+    """
+    t = (s or "").casefold()
+    for tecken in ("½", "¼", "¾", "/", ",", ".", "-"):
+        t = t.replace(tecken, " ")
+    return _WS.sub(" ", t).strip()
+
+
 def to_decimal(varde) -> Decimal:
     """Belopp -> Decimal med tva decimaler (oren), utan float-drift."""
     if varde is None or varde == "":
