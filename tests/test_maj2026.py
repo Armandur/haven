@@ -118,3 +118,35 @@ def test_gava_avstamning(res):
     assert per["Diakoni"].kob == _d("1885.00")
     assert per["Musik"].status == "diff"
     assert per["Gåvomedelskassan"].status == "diff"
+
+
+def test_overstyrning_loser_stigsjo():
+    """Stigsjö-override (05-23 -> Musikverksamheten) ska nolla alla kollektdiffar."""
+    from datetime import date
+    from app.config import Kollekttyp
+    from app.core.pipeline import kor_pipeline
+    from app.core.regler import Overstyrning
+    ov = [Overstyrning(
+        id=1, period="2026-05", forsamling="Stigsjö församling",
+        ny_andamal="Musikverksamheten i Stigsjö församling", ny_typ=Kollekttyp.F,
+        ny_tillfallesdatum=date(2026, 5, 23),
+        datum_fran=date(2026, 5, 23), datum_till=date(2026, 5, 23))]
+    res = kor_pipeline(SWISH, overstyrningar=ov)
+    avst = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
+    assert avst.antal_diffar == 0
+    stigsjo = next(f for f in avst.forsamlingar if f.forsamling == "Stigsjö församling")
+    assert all(r.status == "ok" for r in stigsjo.rader)
+
+
+def test_sarskild_post_invariant():
+    """Utbruten särskild post + allmän ska motsvara kontots total."""
+    from app.core.pipeline import kor_pipeline
+    from app.core.regler import SarskildPost
+    sar = [SarskildPost(id=1, period="2026-05", verksamhet="ACT Svenska Kyrkan",
+                        namn="Ljuständning", meddelande_filter="ljus")]
+    res = kor_pipeline(SWISH, sarskilda_poster=sar)
+    u = res.underlag
+    sarpost = next(p for p in u.gava_sarskilda if p.verksamhet == "ACT Svenska Kyrkan")
+    allman = next(p for p in u.gava_manad if p.verksamhet == "ACT Svenska Kyrkan")
+    assert allman.belopp + sarpost.belopp == _d("6656.00")
+    assert sarpost.belopp > 0

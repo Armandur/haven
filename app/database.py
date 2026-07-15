@@ -3,16 +3,25 @@ full datamodell enligt SPEC.md avsnitt 11 byggs ut i Fas 2.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import String, create_engine, select
+from sqlalchemy import String, create_engine, delete, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from app.config import DB_PATH
+from app.config import DB_PATH, Kollekttyp
+from app.core.regler import Overstyrning, SarskildPost
 
 
 class Base(DeclarativeBase):
     pass
+
+
+def _pdate(s: str | None) -> date | None:
+    return date.fromisoformat(s) if s else None
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 class Bekraftelse(Base):
@@ -21,6 +30,40 @@ class Bekraftelse(Base):
 
     nyckel: Mapped[str] = mapped_column(String, primary_key=True)
     period: Mapped[str] = mapped_column(String, index=True)
+    av_vem: Mapped[str] = mapped_column(String, default="")
+    tidpunkt: Mapped[str] = mapped_column(String, default="")
+
+
+class OverstyrningRad(Base):
+    """Manuell overstyrning av foreslaget kollektandamal (spec 8.3)."""
+    __tablename__ = "overstyrning"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    period: Mapped[str] = mapped_column(String, index=True)
+    forsamling: Mapped[str] = mapped_column(String)
+    ny_andamal: Mapped[str] = mapped_column(String)
+    ny_typ: Mapped[str] = mapped_column(String, default="")            # F/R/S eller ""
+    ny_tillfallesdatum: Mapped[str] = mapped_column(String, default="")  # ISO eller ""
+    meddelande_filter: Mapped[str] = mapped_column(String, default="")
+    datum_fran: Mapped[str] = mapped_column(String, default="")
+    datum_till: Mapped[str] = mapped_column(String, default="")
+    orsak: Mapped[str] = mapped_column(String, default="")
+    av_vem: Mapped[str] = mapped_column(String, default="")
+    tidpunkt: Mapped[str] = mapped_column(String, default="")
+
+
+class SarskildPostRad(Base):
+    """En utbruten sarskild post pa ett gavokonto (spec 6.5)."""
+    __tablename__ = "sarskild_post"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    period: Mapped[str] = mapped_column(String, index=True)
+    verksamhet: Mapped[str] = mapped_column(String)
+    namn: Mapped[str] = mapped_column(String)
+    oronmarkning: Mapped[str] = mapped_column(String, default="")
+    meddelande_filter: Mapped[str] = mapped_column(String, default="")
+    datum_fran: Mapped[str] = mapped_column(String, default="")
+    datum_till: Mapped[str] = mapped_column(String, default="")
     av_vem: Mapped[str] = mapped_column(String, default="")
     tidpunkt: Mapped[str] = mapped_column(String, default="")
 
@@ -57,3 +100,80 @@ def angra(nyckel: str) -> None:
         if rad is not None:
             s.delete(rad)
             s.commit()
+
+
+# --- Overstyrningar ---------------------------------------------------------
+
+def las_overstyrningar(period: str) -> list[Overstyrning]:
+    with Session(engine) as s:
+        rader = s.scalars(
+            select(OverstyrningRad).where(OverstyrningRad.period == period)
+            .order_by(OverstyrningRad.id)
+        ).all()
+        return [
+            Overstyrning(
+                id=r.id, period=r.period, forsamling=r.forsamling,
+                ny_andamal=r.ny_andamal,
+                ny_typ=Kollekttyp(r.ny_typ) if r.ny_typ else None,
+                ny_tillfallesdatum=_pdate(r.ny_tillfallesdatum),
+                meddelande_filter=r.meddelande_filter or None,
+                datum_fran=_pdate(r.datum_fran), datum_till=_pdate(r.datum_till),
+                orsak=r.orsak,
+            ) for r in rader
+        ]
+
+
+def skapa_overstyrning(period: str, forsamling: str, ny_andamal: str,
+                       ny_typ: str = "", ny_tillfallesdatum: str = "",
+                       meddelande_filter: str = "", datum_fran: str = "",
+                       datum_till: str = "", orsak: str = "", av_vem: str = "") -> None:
+    with Session(engine) as s:
+        s.add(OverstyrningRad(
+            period=period, forsamling=forsamling, ny_andamal=ny_andamal,
+            ny_typ=ny_typ, ny_tillfallesdatum=ny_tillfallesdatum,
+            meddelande_filter=meddelande_filter, datum_fran=datum_fran,
+            datum_till=datum_till, orsak=orsak, av_vem=av_vem, tidpunkt=_now(),
+        ))
+        s.commit()
+
+
+def ta_bort_overstyrning(id: int) -> None:
+    with Session(engine) as s:
+        s.execute(delete(OverstyrningRad).where(OverstyrningRad.id == id))
+        s.commit()
+
+
+# --- Sarskilda poster -------------------------------------------------------
+
+def las_sarskilda(period: str) -> list[SarskildPost]:
+    with Session(engine) as s:
+        rader = s.scalars(
+            select(SarskildPostRad).where(SarskildPostRad.period == period)
+            .order_by(SarskildPostRad.id)
+        ).all()
+        return [
+            SarskildPost(
+                id=r.id, period=r.period, verksamhet=r.verksamhet, namn=r.namn,
+                oronmarkning=r.oronmarkning,
+                meddelande_filter=r.meddelande_filter or None,
+                datum_fran=_pdate(r.datum_fran), datum_till=_pdate(r.datum_till),
+            ) for r in rader
+        ]
+
+
+def skapa_sarskild(period: str, verksamhet: str, namn: str, oronmarkning: str = "",
+                   meddelande_filter: str = "", datum_fran: str = "",
+                   datum_till: str = "", av_vem: str = "") -> None:
+    with Session(engine) as s:
+        s.add(SarskildPostRad(
+            period=period, verksamhet=verksamhet, namn=namn,
+            oronmarkning=oronmarkning, meddelande_filter=meddelande_filter,
+            datum_fran=datum_fran, datum_till=datum_till, av_vem=av_vem, tidpunkt=_now(),
+        ))
+        s.commit()
+
+
+def ta_bort_sarskild(id: int) -> None:
+    with Session(engine) as s:
+        s.execute(delete(SarskildPostRad).where(SarskildPostRad.id == id))
+        s.commit()

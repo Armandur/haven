@@ -7,8 +7,17 @@ from pathlib import Path
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.config import DATA_DIR
-from app.database import angra, bekrafta
+from app.config import DATA_DIR, FORSAMLINGAR, MOTTAGARE, Kategori, Registreringssatt
+from app.database import (
+    angra,
+    bekrafta,
+    las_overstyrningar,
+    las_sarskilda,
+    skapa_overstyrning,
+    skapa_sarskild,
+    ta_bort_overstyrning,
+    ta_bort_sarskild,
+)
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
 from app.services.ko_service import KoVy, ladda_ko, standard_rapportfil
@@ -97,6 +106,67 @@ def avstamning(request: Request):
     return templates.TemplateResponse(request, "avstamning.html", {
         "vy": vy, "avst": resultat, "vald": _aktuell_fil(request).name,
     })
+
+
+@router.get("/justeringar")
+def justeringar(request: Request):
+    vy = _vy(request)
+    period = vy.resultat.rapport.period
+    manadskonton = [m.verksamhet for m in MOTTAGARE
+                    if m.kategori is Kategori.GAVA
+                    and m.registreringssatt is Registreringssatt.MANADSSUMMA]
+    resultat = kor_avstamning(vy.resultat)
+    sar_effekt = {p.sarskild_post_id: p for p in vy.resultat.underlag.gava_sarskilda}
+    return templates.TemplateResponse(request, "justeringar.html", {
+        "vy": vy, "vald": _aktuell_fil(request).name, "period": period,
+        "overstyrningar": las_overstyrningar(period),
+        "sarskilda": las_sarskilda(period),
+        "forsamlingar": [f.kanoniskt for f in FORSAMLINGAR],
+        "manadskonton": manadskonton,
+        "avst": resultat, "sar_effekt": sar_effekt,
+    })
+
+
+def _redir_justeringar(request: Request):
+    fil = _aktuell_fil(request)
+    return RedirectResponse(f"/justeringar?fil={fil.name}", status_code=302)
+
+
+@router.post("/justeringar/overstyrning/skapa")
+async def skapa_overstyrning_route(
+    request: Request,
+    period: str = Form(...), forsamling: str = Form(...), ny_andamal: str = Form(...),
+    ny_typ: str = Form(""), ny_tillfallesdatum: str = Form(""),
+    meddelande_filter: str = Form(""), datum_fran: str = Form(""),
+    datum_till: str = Form(""), orsak: str = Form(""),
+):
+    skapa_overstyrning(period, forsamling, ny_andamal, ny_typ, ny_tillfallesdatum,
+                       meddelande_filter, datum_fran, datum_till, orsak)
+    return _redir_justeringar(request)
+
+
+@router.post("/justeringar/overstyrning/tabort")
+async def tabort_overstyrning_route(request: Request, id: int = Form(...)):
+    ta_bort_overstyrning(id)
+    return _redir_justeringar(request)
+
+
+@router.post("/justeringar/sarskild/skapa")
+async def skapa_sarskild_route(
+    request: Request,
+    period: str = Form(...), verksamhet: str = Form(...), namn: str = Form(...),
+    oronmarkning: str = Form(""), meddelande_filter: str = Form(""),
+    datum_fran: str = Form(""), datum_till: str = Form(""),
+):
+    skapa_sarskild(period, verksamhet, namn, oronmarkning, meddelande_filter,
+                   datum_fran, datum_till)
+    return _redir_justeringar(request)
+
+
+@router.post("/justeringar/sarskild/tabort")
+async def tabort_sarskild_route(request: Request, id: int = Form(...)):
+    ta_bort_sarskild(id)
+    return _redir_justeringar(request)
 
 
 @router.get("/underlag")

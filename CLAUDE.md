@@ -33,7 +33,8 @@ app/
     match.py           # ändamålsmatchning (framåtfyllning, Kalenderindex)
     aggregate.py       # registreringsunderlag (F / R-S-grupper / gåva)
     reconcile.py       # KOB-avstämning (kollekt per tillfälle, gåva per konto)
-    pipeline.py        # orkestrering filer -> Underlag
+    regler.py          # handläggarregler: ändamålsöverstyrning + särskilda poster
+    pipeline.py        # orkestrering: las_rapport + bearbeta (tar regler)
   routes/              # FastAPI-routes (webbvy)
   templates/ static/   # Jinja2 + Pico CSS + tokens.css
   main.py              # app, lifespan, router-registrering

@@ -13,8 +13,8 @@ from pathlib import Path
 from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp
 from app.core.aggregate import Underlag
 from app.core.models import Transaktion
-from app.core.pipeline import Pipelineresultat, kor_pipeline
-from app.database import bekraftade_nycklar
+from app.core.pipeline import Pipelineresultat, bearbeta, las_rapport
+from app.database import bekraftade_nycklar, las_overstyrningar, las_sarskilda
 
 
 @dataclass
@@ -58,6 +58,10 @@ def _gm_nyckel(verksamhet, period) -> str:
 
 def _ga_nyckel(verksamhet, andamal) -> str:
     return f"GA|{verksamhet}|{andamal}"
+
+
+def _sar_nyckel(sarskild_post_id) -> str:
+    return f"SAR|{sarskild_post_id}"
 
 
 def bygg_ko(underlag: Underlag) -> list[Kopost]:
@@ -108,6 +112,16 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
             transaktioner=p.transaktioner,
         ))
 
+    for p in underlag.gava_sarskilda:
+        nyckel = _sar_nyckel(p.sarskild_post_id)
+        poster.append(Kopost(
+            nyckel=nyckel, grupp="Gåva", typ_etikett="Särskild post",
+            rubrik=f"{p.verksamhet} - {p.namn}",
+            belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
+            andamal=p.oronmarkning or p.namn, period=p.period,
+            bekraftad=nyckel in bekr, transaktioner=p.transaktioner,
+        ))
+
     return poster
 
 
@@ -140,5 +154,10 @@ def standard_rapportfil() -> Path | None:
 
 
 def ladda_ko(swish_sokvag: str | Path) -> KoVy:
-    resultat = kor_pipeline(swish_sokvag)
+    rapport = las_rapport(swish_sokvag)
+    resultat = bearbeta(
+        rapport,
+        overstyrningar=las_overstyrningar(rapport.period),
+        sarskilda_poster=las_sarskilda(rapport.period),
+    )
     return KoVy(resultat=resultat, poster=bygg_ko(resultat.underlag))

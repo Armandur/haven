@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block titel %}Justeringar{% endblock %}
+{% block content %}
+{% set u = vy.resultat.underlag %}
+<h1>Justeringar - {{ period }}</h1>
+<p class="hv-meta">
+  Kollekttillfällen med diff:
+  <strong class="{% if avst.kollekt and avst.kollekt.antal_diffar %}hv-badge varning{% else %}hv-badge klar{% endif %}">
+    {{ avst.kollekt.antal_diffar if avst.kollekt else "-" }}</strong>
+  · Omatchade rader: <strong>{{ u.omatchade|length }}</strong>
+  · <a href="/avstamning?fil={{ vald|urlencode }}">se avstämning</a>
+</p>
+
+<h2>Ändamålsöverstyrningar</h2>
+<p class="hv-meta">Rätta ett föreslaget kollektändamål när framåtfyllningen avviker mot
+KOB (t.ex. en konsert utanför kalendern). Urvalet väljs på församling + valfritt
+meddelande och datumintervall (på transaktionsdatum).</p>
+
+{% if overstyrningar %}
+<figure><table>
+  <thead><tr><th>Församling</th><th>Filter</th><th>→ Ändamål</th><th>Typ</th><th>Tillfälle</th><th></th></tr></thead>
+  <tbody>
+    {% for o in overstyrningar %}
+    <tr>
+      <td>{{ o.forsamling }}</td>
+      <td class="hv-swish">
+        {% if o.meddelande_filter %}"{{ o.meddelande_filter }}"{% endif %}
+        {% if o.datum_fran or o.datum_till %} {{ o.datum_fran or "" }}–{{ o.datum_till or "" }}{% endif %}
+      </td>
+      <td>{{ o.ny_andamal }}</td>
+      <td>{{ o.ny_typ.value if o.ny_typ else "" }}</td>
+      <td>{{ o.ny_tillfallesdatum or "" }}</td>
+      <td><form method="post" action="/justeringar/overstyrning/tabort?fil={{ vald|urlencode }}">
+        <input type="hidden" name="id" value="{{ o.id }}">
+        <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+      </form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+{% else %}<p class="hv-tomt">Inga överstyrningar.</p>{% endif %}
+
+<article>
+  <header><strong>Ny överstyrning</strong></header>
+  <form method="post" action="/justeringar/overstyrning/skapa?fil={{ vald|urlencode }}">
+    <input type="hidden" name="period" value="{{ period }}">
+    <div class="grid">
+      <label>Församling
+        <select name="forsamling" required>
+          {% for f in forsamlingar %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Nytt ändamål<input type="text" name="ny_andamal" required placeholder="t.ex. Musikverksamheten i Stigsjö församling"></label>
+      <label>Typ
+        <select name="ny_typ"><option value="">behåll</option><option>F</option><option>R</option><option>S</option></select>
+      </label>
+    </div>
+    <div class="grid">
+      <label>Meddelande innehåller<input type="text" name="meddelande_filter" placeholder="valfritt"></label>
+      <label>Datum från<input type="date" name="datum_fran"></label>
+      <label>Datum till<input type="date" name="datum_till"></label>
+      <label>Tillfällesdatum<input type="date" name="ny_tillfallesdatum"></label>
+    </div>
+    <label>Orsak (anteckning)<input type="text" name="orsak" placeholder="valfritt"></label>
+    <button type="submit">Lägg till överstyrning</button>
+  </form>
+</article>
+
+<h2>Särskilda poster</h2>
+<p class="hv-meta">Bryt ut en särskild post (loppis, ljus, konsert...) ur ett gåvokontos
+månadssumma. Urvalet väljs på meddelande och/eller datumintervall. Allmän månadssumma
+plus utbrutna poster ska motsvara kontots total.</p>
+
+{% if sarskilda %}
+<figure><table>
+  <thead><tr><th>Verksamhet</th><th>Namn</th><th>Filter</th><th style="text-align:right">Utbrutet</th><th></th></tr></thead>
+  <tbody>
+    {% for s in sarskilda %}
+    <tr>
+      <td>{{ s.verksamhet }}</td>
+      <td>{{ s.namn }}{% if s.oronmarkning %} <span class="hv-swish">({{ s.oronmarkning }})</span>{% endif %}</td>
+      <td class="hv-swish">
+        {% if s.meddelande_filter %}"{{ s.meddelande_filter }}"{% endif %}
+        {% if s.datum_fran or s.datum_till %} {{ s.datum_fran or "" }}–{{ s.datum_till or "" }}{% endif %}
+      </td>
+      <td style="text-align:right">
+        {% set e = sar_effekt.get(s.id) %}
+        {% if e %}{{ e.belopp|kr }} kr <span class="hv-swish">({{ e.antal }} tx)</span>{% else %}<span class="hv-tomt">0 tx</span>{% endif %}
+      </td>
+      <td><form method="post" action="/justeringar/sarskild/tabort?fil={{ vald|urlencode }}">
+        <input type="hidden" name="id" value="{{ s.id }}">
+        <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+      </form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></figure>
+{% else %}<p class="hv-tomt">Inga särskilda poster.</p>{% endif %}
+
+<article>
+  <header><strong>Ny särskild post</strong></header>
+  <form method="post" action="/justeringar/sarskild/skapa?fil={{ vald|urlencode }}">
+    <input type="hidden" name="period" value="{{ period }}">
+    <div class="grid">
+      <label>Verksamhet
+        <select name="verksamhet" required>
+          {% for v in manadskonton %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Namn<input type="text" name="namn" required placeholder="t.ex. Loppis"></label>
+      <label>Öronmärkning<input type="text" name="oronmarkning" placeholder="valfritt"></label>
+    </div>
+    <div class="grid">
+      <label>Meddelande innehåller<input type="text" name="meddelande_filter" placeholder="t.ex. loppis"></label>
+      <label>Datum från<input type="date" name="datum_fran"></label>
+      <label>Datum till<input type="date" name="datum_till"></label>
+    </div>
+    <button type="submit">Lägg till särskild post</button>
+  </form>
+</article>
+{% endblock %}

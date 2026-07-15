@@ -29,14 +29,15 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   ½, ..." vs "Svenska Kyrkans Unga / ...").
 - [x] Gåvoavstämning per konto med nyckelordsmappning mot KOB-insamlingsrader.
 
-## Fas 1b - särskilda poster + ändamålsöverstyrning
+## Fas 1b - särskilda poster + ändamålsöverstyrning (klar)
 
-- Utbrytning av särskilda poster (filter på meddelande/datum), t.ex. loppis, ljus.
-  Markera urval, namnge posten, bryt ut ur månadssumman (delarna = kontototalen).
-  Feed:ar in i gåvoavstämningen (t.ex. "Act exkl loppis").
-- Manuell överstyrning av föreslaget ändamål (spec 8.3) - fångar Stigsjö-typen
-  där framåtfyllningen är "rätt enligt regeln" men avviker mot KOB (05-17
-  Diakonala vs KOB 05-23 Musik). Spara överstyrningen med historik.
+- [x] Ändamålsöverstyrning (`regler.py`, vy `/justeringar`) - rättar
+  framåtfyllningen via filter på församling/datum/meddelande, sätter
+  ändamål/typ/tillfällesdatum. Löser Stigsjö-typen (05-17 Diakonala -> 05-23 Musik).
+- [x] Särskilda poster - bryter ut loppis/ljus/konsert ur månadssumman via filter.
+  Invariant: allmän + särskilda = kontototal.
+- [ ] Kvar: historik på överstyrningar (vem/när/tidigare värde) - byggs med Fas 2.
+- [ ] Kvar: live-förhandsvisning av filterträff (antal/summa) innan man sparar.
 
 ## Fas 2 - tillstånd, status och redigerbar konfiguration
 

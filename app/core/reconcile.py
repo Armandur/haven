@@ -195,10 +195,13 @@ def _matcha_verksamhet(rad: KobInsamlingsrad) -> str | None:
 
 
 def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAvstamning:
+    # Kontototalen = allman manadssumma + per andamal + utbrutna sarskilda poster.
     swish: dict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
     for p in underlag.gava_manad:
         swish[p.verksamhet] += p.belopp
     for p in underlag.gava_per_andamal:
+        swish[p.verksamhet] += p.belopp
+    for p in underlag.gava_sarskilda:
         swish[p.verksamhet] += p.belopp
 
     kob: dict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))

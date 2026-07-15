@@ -33,6 +33,8 @@ class Transaktion:
     kollekttyp: Kollekttyp | None = None
     matchad_kalenderdatum: date | None = None   # sparbarhet: vilken kalenderrad
     omatchad_orsak: str | None = None           # satts nar ratt varde saknas
+    overstyrd: bool = False                      # andamal manuellt overstyrt
+    sarskild_post_id: int | None = None          # gava utbruten till sarskild post
 
 
 @dataclass

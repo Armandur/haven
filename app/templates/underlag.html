@@ -41,6 +41,16 @@
   </tbody>
 </table></figure>
 
+<h2>Gåvor - särskilda poster</h2>
+<figure><table>
+  <thead><tr><th>Verksamhet</th><th>Namn</th><th>Öronmärkning</th><th style="text-align:right">Belopp</th></tr></thead>
+  <tbody>
+    {% for p in underlag.gava_sarskilda %}
+    <tr><td>{{ p.verksamhet }}</td><td>{{ p.namn }}</td><td>{{ p.oronmarkning }}</td><td style="text-align:right">{{ p.belopp|kr }}</td></tr>
+    {% else %}<tr><td colspan="4" class="hv-tomt">Inga utbrutna poster</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+
 <h2>Gåvor - per ändamål</h2>
 <p class="hv-meta">Provisorisk gruppering på meddelande. Ändamål bekräftas manuellt i Fas 1.</p>
 <figure><table>

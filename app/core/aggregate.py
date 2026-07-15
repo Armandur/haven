@@ -15,6 +15,7 @@ from decimal import Decimal
 
 from app.config import Kategori, Kollekttyp, Registreringssatt
 from app.core.models import Transaktion
+from app.core.regler import SarskildPost, tillhor_sarskild
 
 
 @dataclass
@@ -73,12 +74,25 @@ class GavaAndamalspost:
 
 
 @dataclass
+class GavaSarskildpost:
+    verksamhet: str
+    period: str
+    namn: str
+    oronmarkning: str
+    belopp: Decimal
+    antal: int
+    sarskild_post_id: int
+    transaktioner: list[Transaktion] = field(default_factory=list)
+
+
+@dataclass
 class Underlag:
     period: str
     f_poster: list[FPost] = field(default_factory=list)
     rs_grupper: list[RSGrupp] = field(default_factory=list)
     gava_manad: list[GavaManadspost] = field(default_factory=list)
     gava_per_andamal: list[GavaAndamalspost] = field(default_factory=list)
+    gava_sarskilda: list[GavaSarskildpost] = field(default_factory=list)
     omatchade: list[Transaktion] = field(default_factory=list)
 
 
@@ -86,13 +100,17 @@ def _summa(txs: list[Transaktion]) -> Decimal:
     return sum((t.belopp for t in txs), Decimal("0.00"))
 
 
-def bygg_underlag(transaktioner: list[Transaktion], period: str) -> Underlag:
+def bygg_underlag(transaktioner: list[Transaktion], period: str,
+                  sarskilda_poster: list[SarskildPost] | None = None) -> Underlag:
     u = Underlag(period=period)
+    sarskilda_poster = sarskilda_poster or []
 
     f_grupp: dict[tuple, list[Transaktion]] = defaultdict(list)
     rs_grupp: dict[tuple, dict[str, list[Transaktion]]] = defaultdict(lambda: defaultdict(list))
     gava_manad: dict[str, list[Transaktion]] = defaultdict(list)
     gava_and: dict[tuple, list[Transaktion]] = defaultdict(list)
+    gava_sar: dict[int, list[Transaktion]] = defaultdict(list)
+    sar_index = {p.id: p for p in sarskilda_poster}
 
     for t in transaktioner:
         if t.omatchad_orsak:
@@ -112,8 +130,12 @@ def bygg_underlag(transaktioner: list[Transaktion], period: str) -> Underlag:
                 u.omatchade.append(t)
 
         elif t.kategori is Kategori.GAVA:
-            if t.registreringssatt is Registreringssatt.PER_ANDAMAL:
-                # Provisorisk nyckel = meddelande; handlaggaren satter ratt andamal i Fas 1.
+            sar = tillhor_sarskild(t, sarskilda_poster)
+            if sar is not None:
+                t.sarskild_post_id = sar.id
+                gava_sar[sar.id].append(t)
+            elif t.registreringssatt is Registreringssatt.PER_ANDAMAL:
+                # Provisorisk nyckel = meddelande; handlaggaren satter ratt andamal.
                 nyckel = t.meddelande or "(utan meddelande)"
                 gava_and[(t.verksamhet, nyckel)].append(t)
             else:
@@ -141,5 +163,13 @@ def bygg_underlag(transaktioner: list[Transaktion], period: str) -> Underlag:
         u.gava_per_andamal.append(
             GavaAndamalspost(verksamhet, period, nyckel, _summa(txs), len(txs), txs))
     u.gava_per_andamal.sort(key=lambda p: (p.verksamhet, p.andamal))
+
+    for pid, txs in gava_sar.items():
+        p = sar_index[pid]
+        u.gava_sarskilda.append(GavaSarskildpost(
+            verksamhet=p.verksamhet, period=period, namn=p.namn,
+            oronmarkning=p.oronmarkning, belopp=_summa(txs), antal=len(txs),
+            sarskild_post_id=pid, transaktioner=txs))
+    u.gava_sarskilda.sort(key=lambda p: (p.verksamhet, p.namn))
 
     return u
