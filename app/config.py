@@ -1,0 +1,108 @@
+"""Konstanter, konfiguration och frodata for kollektverktyget.
+
+Mottagarmappning och forsamlingsalias fros harifran (bekraftade mot
+maj 2026-datan). I Fas 2 flyttas de till SQLite och blir redigerbara i UI:t.
+"""
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+
+# --- Sokvagar ---------------------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(os.environ.get("HAVEN_DATA_DIR", BASE_DIR / "data"))
+KALENDER_FIL = os.environ.get("HAVEN_KALENDER_FIL", "2026 - Kollektändamål.xlsx")
+DB_PATH = Path(os.environ.get("HAVEN_DB", BASE_DIR / "haven.db"))
+
+HOST = os.environ.get("HAVEN_HOST", "0.0.0.0")
+PORT = int(os.environ.get("HAVEN_PORT", "8000"))
+
+
+# --- Domankategorier --------------------------------------------------------
+
+class Kategori(str, Enum):
+    KOLLEKT = "kollekt"
+    GAVA = "gava"
+
+
+class Kollekttyp(str, Enum):
+    """Bokstav i andamalskalendern -> KOB:s kollekttyp."""
+    F = "F"  # Forsamlingskollekt
+    R = "R"  # Rikskollekt
+    S = "S"  # Stiftskollekt
+
+    @property
+    def kob_namn(self) -> str:
+        return {
+            "F": "Församlingskollekt",
+            "R": "Rikskollekt",
+            "S": "Stiftskollekt",
+        }[self.value]
+
+
+class Registreringssatt(str, Enum):
+    MANADSSUMMA = "manadssumma"
+    PER_ANDAMAL = "per_andamal"
+
+
+# Inbetalningsmetoden ar alltid denna i pastoratets fall (spec 6.6).
+INBETALNINGSMETOD = "Swish 1"
+
+
+# --- Forsamlingar (kollektmottagare) ----------------------------------------
+
+@dataclass(frozen=True)
+class Forsamling:
+    kanoniskt: str
+    kortkod: str          # bladnamn i andamalskalendern
+    alias: tuple[str, ...] = field(default_factory=tuple)
+
+
+FORSAMLINGAR: tuple[Forsamling, ...] = (
+    Forsamling("Domkyrkoförsamlingen", "DK", ("Härnösands domkyrkoförsamling",)),
+    Forsamling("Hemsö Församling", "HE", ("Hemsö församling",)),
+    Forsamling("Häggdångers Församling", "HÄ", ("Häggdångers församling",)),
+    Forsamling("Högsjö Församling", "HÖ", ("Högsjö församling",)),
+    Forsamling("Stigsjö Församling", "ST", ("Stigsjö församling",)),
+    Forsamling("Säbrå Församling", "SÄ", ("Säbrå församling",)),
+    Forsamling("Viksjö Församling", "VI", ("Viksjö församling",)),
+)
+
+
+# --- Mottagarmappning (Mottagarnamn i Swish -> kategori) ---------------------
+
+@dataclass(frozen=True)
+class Mottagare:
+    namn: str                       # sa som det star i Swish-rapporten
+    kategori: Kategori
+    # For kollekt: kopplas till forsamling via namn/alias.
+    # For gava: verksamhet + registreringssatt.
+    verksamhet: str | None = None
+    registreringssatt: Registreringssatt | None = None
+
+
+# Frovarden bekraftade mot maj 2026 (alla mottagare i datan finns med).
+MOTTAGARE: tuple[Mottagare, ...] = (
+    # Kollektmottagare (forsamlingar)
+    Mottagare("Domkyrkoförsamlingen", Kategori.KOLLEKT),
+    Mottagare("Hemsö Församling", Kategori.KOLLEKT),
+    Mottagare("Häggdångers Församling", Kategori.KOLLEKT),
+    Mottagare("Högsjö Församling", Kategori.KOLLEKT),
+    Mottagare("Stigsjö Församling", Kategori.KOLLEKT),
+    Mottagare("Säbrå Församling", Kategori.KOLLEKT),
+    Mottagare("Viksjö Församling", Kategori.KOLLEKT),
+    # Gavomottagare (verksamheter)
+    Mottagare("ACT Svenska Kyrkan", Kategori.GAVA, "ACT Svenska Kyrkan",
+              Registreringssatt.MANADSSUMMA),
+    Mottagare("Barn & Unga", Kategori.GAVA, "Barn & Unga",
+              Registreringssatt.MANADSSUMMA),
+    Mottagare("Diakoni", Kategori.GAVA, "Diakoni",
+              Registreringssatt.MANADSSUMMA),
+    Mottagare("Musik", Kategori.GAVA, "Musik",
+              Registreringssatt.MANADSSUMMA),
+    Mottagare("Gåvomedelskassan", Kategori.GAVA, "Gåvomedelskassan",
+              Registreringssatt.PER_ANDAMAL),
+)

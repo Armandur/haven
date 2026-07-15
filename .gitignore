@@ -1,0 +1,28 @@
+# Data med givarmeddelanden (personuppgifter) - stannar lokalt
+/data/
+*.xlsx
+*.xls
+
+# Databas och state
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# uv
+.uv/
+
+# Efemart
+/tmp/
+dev.log
+
+# Editor
+.vscode/
+.idea/
