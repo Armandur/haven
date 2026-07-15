@@ -207,3 +207,21 @@ def test_overstyrning_via_tx_ids(res):
     r2 = kor_pipeline(SWISH, overstyrningar=ov)
     avst = avstam_kollekt(r2.rapport.transaktioner, las_kob_kollekt(KOB_KOLLEKT))
     assert avst.antal_diffar == 0
+
+
+def test_status_harleds(res):
+    """Status ska härledas ur bekräftelser (inga i test-DB) + avstämning."""
+    from app.database import init_db
+    from app.services.avstamning_service import kor_avstamning
+    from app.services.ko_service import KoVy, bygg_ko
+    from app.services.status_service import bygg_status
+    init_db()
+    vy = KoVy(resultat=res, poster=bygg_ko(res.underlag))
+    avst = kor_avstamning(res)
+    ov = bygg_status(vy, avst)
+    fmap = {e.namn: e for e in ov.forsamlingar}
+    vmap = {e.namn: e for e in ov.verksamheter}
+    assert all(e.tillstand == "ej_paborjad" for e in ov.forsamlingar)
+    assert fmap["Säbrå församling"].avstamning_ok is True     # nettar rent
+    assert vmap["ACT Svenska Kyrkan"].avstamning_ok is True
+    assert vmap["Musik"].avstamning_ok is False               # ej registrerad i KOB

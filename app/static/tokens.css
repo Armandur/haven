@@ -142,6 +142,18 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-post.typ-kant-r { border-left-color: var(--hv-typ-r); }
 .hv-post.typ-kant-s { border-left-color: var(--hv-typ-s); }
 .hv-post.typ-kant-f { border-left-color: var(--hv-typ-f); }
+/* Statustillstand */
+.hv-badge.status-ej_paborjad { background: var(--hv-vantar-bg); color: var(--hv-vantar); }
+.hv-badge.status-paborjad { background: var(--hv-varning-bg); color: var(--hv-varning); }
+.hv-badge.status-registrerad { background: var(--hv-typ-gava-bg); color: var(--hv-typ-gava); }
+.hv-badge.status-avstamd { background: var(--hv-ok-bg); color: var(--hv-ok); }
+.hv-statuskort {
+  display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 1rem 0;
+  padding: 0.8rem 1rem; border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+.hv-statuskort strong.hv-badge { font-size: 1rem; }
+
 .hv-tx-grupp { margin-top: 0.6rem; }
 .hv-tx-grupprubrik { margin: 0 0 0.2rem; font-size: 0.85rem; }
 .hv-tx-grupprubrik strong { color: var(--hv-accent); }

@@ -12,6 +12,7 @@
     <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
       <span class="hv-titel"><a href="/{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Håven</a></span>
       <nav>
+        <a href="/status{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Status</a>
         <a href="/ko{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Arbetskö</a>
         <a href="/underlag{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Underlag</a>
         <a href="/avstamning{% if vald %}?fil={{ vald|urlencode }}{% endif %}">Avstämning</a>

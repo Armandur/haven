@@ -22,6 +22,7 @@ from app.database import (
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
 from app.services.ko_service import KoVy, ladda_ko, standard_rapportfil
+from app.services.status_service import bygg_status
 
 router = APIRouter()
 
@@ -90,6 +91,17 @@ async def _ko_svar(request: Request, nyckel: str):
         })
     fil = _aktuell_fil(request)
     return RedirectResponse(f"/ko?fil={fil.name}", status_code=302)
+
+
+@router.get("/status")
+def status(request: Request):
+    vy = _vy(request)
+    avst = kor_avstamning(vy.resultat)
+    oversikt = bygg_status(vy, avst)
+    return templates.TemplateResponse(request, "status.html", {
+        "vy": vy, "vald": _aktuell_fil(request).name,
+        "oversikt": oversikt, "avst": avst,
+    })
 
 
 @router.get("/omatchade")

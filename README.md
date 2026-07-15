@@ -25,7 +25,11 @@ Stigsjö-avvikelsen fångas som två motverkande diffar).
 särskilda poster (bryter ut loppis/ljus/konsert ur ett gåvokontos månadssumma).
 Reglerna persisteras i SQLite och tillämpas på hela flödet.
 
-Kommande: statusspårning + idempotens/historik (Fas 2), halvautomatisk
+**Fas 2 (påbörjad):** statusspårning i vyn `/status` - tillstånd per församling
+och verksamhet (Ej påbörjad -> Påbörjad -> Registrerad -> Avstämd) härlett ur
+arbetsköns bekräftelser och KOB-avstämningen. Ersätter Registreringar-matrisen.
+
+Kommande: idempotens/historik och flermånadsflöde (Fas 2 forts.), halvautomatisk
 KOB-inmatning (Fas 3).
 
 ## Köra

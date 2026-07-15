@@ -43,6 +43,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Fas 2 - tillstånd, status och redigerbar konfiguration
 
+- [x] Statusspårning (`status_service.py`, vy `/status`): tillstånd per enhet
+  (Ej påbörjad -> Påbörjad -> Registrerad -> Avstämd) härlett ur arbetsköns
+  bekräftelser + KOB-avstämningen. Ersätter Registreringar-matrisen.
+- [ ] Kvar nedan:
+
 - Flytta mottagarmappning, församlingsalias och ändamålskalender till SQLite och
   gör dem **redigerbara i ett gränssnitt**. Detta är förutsättningen för att
   verktyget ska kunna bli generellt och användas av andra enheter/pastorat utan

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titel %}Status{% endblock %}
+
+{% macro statusrad(e) %}
+<tr>
+  <td>{{ e.namn }}</td>
+  <td>{{ e.bekraftade }} / {{ e.antal }}</td>
+  <td style="text-align:right">{{ e.belopp|kr }} kr</td>
+  <td><span class="hv-badge status-{{ e.tillstand }}">{{ e.etikett }}</span></td>
+  <td>
+    {% if e.avstamning_ok is none %}<span class="hv-tomt">ingen avstämning</span>
+    {% elif e.avstamning_ok %}<span class="hv-badge klar">✓ ren</span>
+    {% else %}<span class="hv-badge varning">diff</span>{% endif %}
+  </td>
+</tr>
+{% endmacro %}
+
+{% block content %}
+{% set rap = vy.resultat.rapport %}
+{% set s = oversikt.sammanfattning %}
+<h1>Status - {{ rap.period }}</h1>
+<p class="hv-meta">Härlett ur arbetsköns bekräftelser och KOB-avstämningen. Ersätter
+den handmatade Registreringar-matrisen.</p>
+
+<div class="hv-statuskort">
+  <div><small>Avstämda</small><br><strong class="hv-badge status-avstamd">{{ s.avstamd }}</strong></div>
+  <div><small>Registrerade</small><br><strong class="hv-badge status-registrerad">{{ s.registrerad }}</strong></div>
+  <div><small>Påbörjade</small><br><strong class="hv-badge status-paborjad">{{ s.paborjad }}</strong></div>
+  <div><small>Ej påbörjade</small><br><strong class="hv-badge status-ej_paborjad">{{ s.ej_paborjad }}</strong></div>
+  <div><small>Enheter totalt</small><br><strong style="font-size:1.3rem;">{{ s.totalt }}</strong></div>
+</div>
+
+{% if not oversikt.har_avstamning %}
+<p class="hv-meta"><span class="hv-badge varning">KOB-export saknas</span> - enheter kan bli Registrerade men inte Avstämda förrän KOB-exporterna finns i data-katalogen.</p>
+{% endif %}
+
+<h2>Församlingar (kollekt)</h2>
+<figure><table>
+  <thead><tr><th>Församling</th><th>Bekräftat</th><th style="text-align:right">Swish</th><th>Tillstånd</th><th>Avstämning</th></tr></thead>
+  <tbody>
+    {% for e in oversikt.forsamlingar %}{{ statusrad(e) }}{% else %}
+    <tr><td colspan="5" class="hv-tomt">Inga</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+
+<h2>Insamlingar / Gåvor</h2>
+<figure><table>
+  <thead><tr><th>Verksamhet</th><th>Bekräftat</th><th style="text-align:right">Swish</th><th>Tillstånd</th><th>Avstämning</th></tr></thead>
+  <tbody>
+    {% for e in oversikt.verksamheter %}{{ statusrad(e) }}{% else %}
+    <tr><td colspan="5" class="hv-tomt">Inga</td></tr>{% endfor %}
+  </tbody>
+</table></figure>
+
+<p class="hv-meta">Bekräfta poster i <a href="/ko?fil={{ vald|urlencode }}">arbetskön</a>;
+när alla poster för en enhet är bekräftade blir den Registrerad, och efter en ren
+<a href="/avstamning?fil={{ vald|urlencode }}">avstämning</a> Avstämd.</p>
+{% endblock %}
