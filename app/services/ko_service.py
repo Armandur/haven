@@ -29,6 +29,7 @@ class Delpost:
 class Kopost:
     nyckel: str
     grupp: str                       # "F" | "R/S" | "Gåva"
+    typ_kod: str                     # "F" | "R" | "S" | "gava" (for fargkod)
     typ_etikett: str                 # KOB-kollekttyp eller registreringssatt
     rubrik: str
     belopp: Decimal
@@ -71,7 +72,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
     for p in underlag.f_poster:
         nyckel = _f_nyckel(p.forsamling, p.datum, p.andamal)
         poster.append(Kopost(
-            nyckel=nyckel, grupp="F", typ_etikett=Kollekttyp.F.kob_namn,
+            nyckel=nyckel, grupp="F", typ_kod="F", typ_etikett=Kollekttyp.F.kob_namn,
             rubrik=f"{p.forsamling} - {p.datum:%Y-%m-%d}",
             belopp=p.belopp, antal=p.antal, forsamling=p.forsamling,
             datum=p.datum, andamal=p.andamal, bekraftad=nyckel in bekr,
@@ -84,7 +85,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
         delposter = [Delpost(d.forsamling, d.belopp, d.antal, d.transaktioner)
                      for d in g.delposter]
         poster.append(Kopost(
-            nyckel=nyckel, grupp="R/S", typ_etikett=typ.kob_namn,
+            nyckel=nyckel, grupp="R/S", typ_kod=g.kollekttyp, typ_etikett=typ.kob_namn,
             rubrik=f"{typ.kob_namn} - {g.datum:%Y-%m-%d}",
             belopp=g.summa, antal=g.antal, datum=g.datum, andamal=g.andamal,
             delposter=delposter, bekraftad=nyckel in bekr,
@@ -94,7 +95,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
     for p in underlag.gava_manad:
         nyckel = _gm_nyckel(p.verksamhet, p.period)
         poster.append(Kopost(
-            nyckel=nyckel, grupp="Gåva", typ_etikett="Insamling (månadssumma)",
+            nyckel=nyckel, grupp="Gåva", typ_kod="gava", typ_etikett="Insamling (månadssumma)",
             rubrik=f"{p.verksamhet} - {p.period}",
             belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
             period=p.period, bekraftad=nyckel in bekr,
@@ -104,7 +105,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
     for p in underlag.gava_per_andamal:
         nyckel = _ga_nyckel(p.verksamhet, p.andamal)
         poster.append(Kopost(
-            nyckel=nyckel, grupp="Gåva", typ_etikett="Insamling (per ändamål)",
+            nyckel=nyckel, grupp="Gåva", typ_kod="gava", typ_etikett="Insamling (per ändamål)",
             rubrik=f"{p.verksamhet} - {p.andamal}",
             belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
             andamal=p.andamal, period=p.period, bekraftad=nyckel in bekr,
@@ -115,7 +116,7 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
     for p in underlag.gava_sarskilda:
         nyckel = _sar_nyckel(p.sarskild_post_id)
         poster.append(Kopost(
-            nyckel=nyckel, grupp="Gåva", typ_etikett="Särskild post",
+            nyckel=nyckel, grupp="Gåva", typ_kod="gava", typ_etikett="Särskild post",
             rubrik=f"{p.verksamhet} - {p.namn}",
             belopp=p.belopp, antal=p.antal, forsamling=p.verksamhet,
             andamal=p.oronmarkning or p.namn, period=p.period,

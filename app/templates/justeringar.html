@@ -31,7 +31,7 @@ kalendern).</p>
           {% if o.datum_fran or o.datum_till %} {{ o.datum_fran or "" }}–{{ o.datum_till or "" }}{% endif %}{% endif %}
       </td>
       <td>{{ o.ny_andamal }}</td>
-      <td>{{ o.ny_typ.value if o.ny_typ else "" }}</td>
+      <td>{% if o.ny_typ %}<span class="hv-badge typ-{{ o.ny_typ.value|lower }}">{{ o.ny_typ.value }}</span>{% endif %}</td>
       <td>{{ o.ny_tillfallesdatum or "" }}</td>
       <td><form method="post" action="/justeringar/overstyrning/tabort{{ q }}">
         <input type="hidden" name="id" value="{{ o.id }}">
@@ -82,7 +82,7 @@ kalendern).</p>
             <td>{{ t.trans_datum }}</td>
             <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
             <td class="hv-swish">{{ t.meddelande }}</td>
-            <td>{{ t.kollekttyp.value if t.kollekttyp else '' }}</td>
+            <td>{% if t.kollekttyp %}<span class="hv-badge typ-{{ t.kollekttyp.value|lower }}">{{ t.kollekttyp.value }}</span>{% endif %}</td>
             <td style="text-align:right">{{ t.belopp|kr }}</td>
             <td>{{ t.andamal or '-' }}{% if t.overstyrd %} <span class="hv-badge varning">överstyrd</span>{% endif %}</td>
           </tr>

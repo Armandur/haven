@@ -77,11 +77,35 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
   display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
   font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
 }
-.hv-badge.f { background: var(--hv-vantar-bg); color: var(--hv-vantar); }
-.hv-badge.rs { background: var(--hv-varning-bg); color: var(--hv-varning); }
-.hv-badge.gava { background: var(--hv-ok-bg); color: var(--hv-ok); }
 .hv-badge.klar { background: var(--hv-ok-bg); color: var(--hv-ok); }
 .hv-badge.varning { background: var(--hv-varning-bg); color: var(--hv-varning); }
+
+/* Genomgaende fargkod for kollekttyp/insamling:
+   F = gron (forsamling), S = gul (stift), R = rod (riks), gava = bla (insamling). */
+:root {
+  --hv-typ-f: #2e7d32;   --hv-typ-f-bg: #e6f4ea;
+  --hv-typ-s: #8a6d00;   --hv-typ-s-bg: #fbf1c7;
+  --hv-typ-r: #b3261e;   --hv-typ-r-bg: #fdecea;
+  --hv-typ-gava: #1558b0; --hv-typ-gava-bg: #e7f0fb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --hv-typ-f: #7ecb8a;   --hv-typ-f-bg: #16351f;
+    --hv-typ-s: #e2c65a;   --hv-typ-s-bg: #38300f;
+    --hv-typ-r: #f0938c;   --hv-typ-r-bg: #3a1614;
+    --hv-typ-gava: #86b4f0; --hv-typ-gava-bg: #12233d;
+  }
+}
+:root[data-theme="dark"] {
+  --hv-typ-f: #7ecb8a;   --hv-typ-f-bg: #16351f;
+  --hv-typ-s: #e2c65a;   --hv-typ-s-bg: #38300f;
+  --hv-typ-r: #f0938c;   --hv-typ-r-bg: #3a1614;
+  --hv-typ-gava: #86b4f0; --hv-typ-gava-bg: #12233d;
+}
+.hv-badge.typ-f { background: var(--hv-typ-f-bg); color: var(--hv-typ-f); }
+.hv-badge.typ-s { background: var(--hv-typ-s-bg); color: var(--hv-typ-s); }
+.hv-badge.typ-r { background: var(--hv-typ-r-bg); color: var(--hv-typ-r); }
+.hv-badge.typ-gava { background: var(--hv-typ-gava-bg); color: var(--hv-typ-gava); }
 
 .hv-post details.hv-tx { margin-top: 0.5rem; }
 .hv-post details.hv-tx summary {

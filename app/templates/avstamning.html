@@ -42,7 +42,7 @@
       {% for r in f.rader %}
       <tr>
         <td>{{ r.datum or "-" }}</td>
-        <td>{% if r.kollekttyp %}<span class="hv-badge {% if r.kollekttyp == 'F' %}f{% else %}rs{% endif %}">{{ r.kollekttyp }}</span>{% endif %}</td>
+        <td>{% if r.kollekttyp %}<span class="hv-badge typ-{{ r.kollekttyp|lower }}">{{ r.kollekttyp }}</span>{% endif %}</td>
         <td class="hv-meta">
           {{ r.swish_andamal or "-" }}{% if r.kob_andamal and r.kob_andamal != r.swish_andamal %} <span class="hv-swish">→ {{ r.kob_andamal }}</span>{% endif %}
         </td>

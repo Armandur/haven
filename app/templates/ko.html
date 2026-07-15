@@ -21,7 +21,7 @@
          id="post-{{ loop.index }}" data-nyckel="{{ p.nyckel }}">
   <header>
     <div>
-      <span class="hv-badge {% if p.grupp == 'F' %}f{% elif p.grupp == 'R/S' %}rs{% else %}gava{% endif %}">{{ p.typ_etikett }}</span>
+      <span class="hv-badge typ-{{ p.typ_kod|lower }}">{{ p.typ_etikett }}</span>
       <strong>{{ p.rubrik }}</strong>
       <span class="hv-badge klar" data-roll="klarmarke" {% if not p.bekraftad %}hidden{% endif %}>✓ registrerad</span>
     </div>

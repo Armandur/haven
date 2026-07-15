@@ -18,7 +18,7 @@
 {% for g in underlag.rs_grupper %}
 <article class="hv-post">
   <header>
-    <div><span class="hv-badge rs">{{ g.kollekttyp }}</span> <strong>{{ g.andamal }}</strong> <span class="hv-meta">{{ g.datum }}</span></div>
+    <div><span class="hv-badge typ-{{ g.kollekttyp|lower }}">{{ g.kollekttyp }}</span> <strong>{{ g.andamal }}</strong> <span class="hv-meta">{{ g.datum }}</span></div>
     <span class="hv-belopp">{{ g.summa|kr }} kr</span>
   </header>
   <table>
