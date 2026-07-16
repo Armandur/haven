@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.1.0
+// @version      0.2.0
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
 // @match        http://kob-utb.svenskakyrkan.se/*
@@ -9,7 +9,11 @@
 // SKARP DRIFT: avkommentera raden nedan och sätt din EXAKTA skarpa KOB-host
 // (verifiera host + prefix, se KOB-INMATNING §9.1/§11). Gissa inte hela domänen:
 // // @match     https://KOB-SKARP-HOST/*
-// @grant        none
+// @connect      ubuntu-ai
+// @connect      localhost
+// @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -32,7 +36,19 @@
   // Konstanter
   // ---------------------------------------------------------------------------
   const STATE_KEY = 'haven_kob_state';
+  const HAVEN_URL_KEY = 'haven_export_url';
+  const HAVEN_URL_DEFAULT = 'http://ubuntu-ai:8003/ko/export.json';
   const KOLLEKTTYP_TEXT = { F: 'Församlingskollekt', R: 'Rikskollekt', S: 'Stiftskollekt' };
+
+  // GM-API kan saknas beroende på userscript-manager/grants.
+  const harGM = typeof GM_xmlhttpRequest !== 'undefined';
+  function havenUrl() {
+    try { return (typeof GM_getValue !== 'undefined' && GM_getValue(HAVEN_URL_KEY)) || HAVEN_URL_DEFAULT; }
+    catch (e) { return HAVEN_URL_DEFAULT; }
+  }
+  function sättHavenUrl(url) {
+    try { if (typeof GM_setValue !== 'undefined') GM_setValue(HAVEN_URL_KEY, url); } catch (e) { /* ignoreras */ }
+  }
 
   // ---------------------------------------------------------------------------
   // Rena hjälpfunktioner (DOM-oberoende - testbara i isolering)
@@ -84,6 +100,20 @@
     const beslutatAv = tds[2] || '';
     const andamal = tds[3] || '';
     return textMatch(beslutatAv, post.forsamling) && textMatch(andamal, post.andamal);
+  }
+
+  // Hämta underlaget direkt från Håven via GM_xmlhttpRequest (kringgår CORS;
+  // Håven behöver inte vara öppen som flik, bara nås över nätet). onOk(text)/onErr(msg).
+  function hamtaFranHaven(url, onOk, onErr) {
+    if (!harGM) { onErr('GM_xmlhttpRequest saknas - kontrollera @grant/manager.'); return; }
+    GM_xmlhttpRequest({
+      method: 'GET', url: url, timeout: 15000,
+      onload: r => (r.status >= 200 && r.status < 300)
+        ? onOk(r.responseText)
+        : onErr('Håven svarade ' + r.status + '.'),
+      onerror: () => onErr('Kunde inte nå Håven (' + url + '). Nätverk/host?'),
+      ontimeout: () => onErr('Timeout mot Håven (' + url + ').'),
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -154,6 +184,15 @@
   }
   function nollställState() { sessionStorage.removeItem(STATE_KEY); ritaPanel(); }
 
+  function tillämpaUnderlag(text, källa) {
+    const r = validateUnderlag(text);
+    if (!r.ok) { alert('Kunde inte läsa underlaget:\n' + r.fel); return false; }
+    sparaState({ underlag: r.underlag, index: null, step: null, active: false });
+    ritaPanel();
+    logga(`Underlag laddat (${källa}): period ${r.underlag.period}, ${r.underlag.poster.length} poster.`);
+    return true;
+  }
+
   // ---------------------------------------------------------------------------
   // Injicerad panel
   // ---------------------------------------------------------------------------
@@ -203,6 +242,41 @@
     console.log('[Håven]', msg);
   }
 
+  function byggHamtaSektion(harUnderlag) {
+    const box = document.createElement('div');
+    box.style.cssText = 'border-bottom:1px solid #eee;padding-bottom:8px;margin-bottom:6px';
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:block;font-size:11px;color:#666;margin-bottom:2px';
+    lbl.textContent = 'Håven export-URL';
+    const url = document.createElement('input');
+    url.type = 'text';
+    url.value = havenUrl();
+    url.style.cssText = 'width:100%;box-sizing:border-box;font:11px monospace;margin-bottom:4px';
+    url.onchange = () => sättHavenUrl(url.value.trim());
+    const btn = document.createElement('button');
+    btn.className = 'primar';
+    btn.textContent = harUnderlag ? 'Hämta igen från Håven' : 'Hämta från Håven';
+    btn.onclick = () => {
+      const u = url.value.trim();
+      sättHavenUrl(u);
+      btn.disabled = true; btn.textContent = 'Hämtar...';
+      hamtaFranHaven(u,
+        text => { btn.disabled = false; tillämpaUnderlag(text, 'Håven'); },
+        msg => { btn.disabled = false; btn.textContent = harUnderlag ? 'Hämta igen från Håven' : 'Hämta från Håven'; alert('Hämtning misslyckades:\n' + msg); logga('Hämtning misslyckades: ' + msg); });
+    };
+    box.appendChild(lbl);
+    box.appendChild(url);
+    box.appendChild(btn);
+    if (!harGM) {
+      btn.disabled = true;
+      const n = document.createElement('small');
+      n.style.cssText = 'display:block;color:#b45309;margin-top:4px';
+      n.textContent = 'GM_xmlhttpRequest saknas i denna manager/grant - använd inklistring nedan.';
+      box.appendChild(n);
+    }
+    return box;
+  }
+
   function ritaPanel() {
     css();
     if (!q('#haven-kob-fab')) {
@@ -235,20 +309,20 @@
     kropp.className = 'kropp';
     panelEl.appendChild(kropp);
 
+    // Hämta-från-Håven-sektion (visas alltid; låter dig ladda/uppdatera underlag).
+    kropp.appendChild(byggHamtaSektion(!!u));
+
     if (!u) {
-      kropp.innerHTML = '<p>Klistra in JSON-exporten från Håven (<code>/ko</code> → "Kopiera underlag som JSON").</p>';
+      const p = document.createElement('p');
+      p.style.margin = '8px 0 4px';
+      p.innerHTML = '...eller klistra in JSON manuellt (<code>/ko</code> → "Kopiera underlag som JSON"):';
+      kropp.appendChild(p);
       const ta = document.createElement('textarea');
       ta.placeholder = '{ "kalla": "Håven", "poster": [...] }';
       kropp.appendChild(ta);
       const btn = document.createElement('button');
-      btn.className = 'primar';
-      btn.textContent = 'Ladda underlag';
-      btn.onclick = () => {
-        const r = validateUnderlag(ta.value);
-        if (!r.ok) { alert('Kunde inte läsa underlaget:\n' + r.fel); return; }
-        sparaState({ underlag: r.underlag, index: null, step: null, active: false });
-        ritaPanel();
-      };
+      btn.textContent = 'Ladda inklistrat';
+      btn.onclick = () => tillämpaUnderlag(ta.value, 'inklistrat');
       kropp.appendChild(btn);
     } else {
       const info = document.createElement('div');
