@@ -33,6 +33,7 @@ from app.database import (
     ta_bort_mottagare,
     ta_bort_overstyrning,
     ta_bort_sarskild,
+    uppdatera_overstyrning,
 )
 from app.core.regler import Overstyrning, SarskildPost
 from app.services.import_service import ta_emot
@@ -251,9 +252,12 @@ def justeringar(request: Request):
 
     resultat = kor_avstamning(vy.resultat)
     sar_effekt = {p.sarskild_post_id: p for p in vy.resultat.underlag.gava_sarskilda}
+    overstyrningar = las_overstyrningar(period)
+    redigera_ov = request.query_params.get("redigera_ov")
+    ov_redigera = next((o for o in overstyrningar if str(o.id) == redigera_ov), None)
     return templates.TemplateResponse(request, "justeringar.html", {
         "vy": vy, "vald": _aktuell_fil(request).name, "period": period,
-        "overstyrningar": las_overstyrningar(period),
+        "overstyrningar": overstyrningar, "ov_redigera": ov_redigera,
         "sarskilda": las_sarskilda(period),
         "forsamlingar": [f.kanoniskt for f in FORSAMLINGAR],
         "manadskonton": manadskonton,
@@ -293,6 +297,15 @@ async def skapa_overstyrning_route(
 ):
     skapa_overstyrning(period, forsamling, ny_andamal, ny_typ, ny_tillfallesdatum,
                        tx_ids, meddelande_filter, datum_fran, datum_till, orsak)
+    return _redir_justeringar(request)
+
+
+@router.post("/justeringar/overstyrning/uppdatera")
+async def uppdatera_overstyrning_route(
+    request: Request, id: int = Form(...), ny_andamal: str = Form(...),
+    ny_typ: str = Form(""), ny_tillfallesdatum: str = Form(""), orsak: str = Form(""),
+):
+    uppdatera_overstyrning(id, ny_andamal, ny_typ, ny_tillfallesdatum, orsak)
     return _redir_justeringar(request)
 
 

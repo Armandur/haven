@@ -264,6 +264,31 @@ def skapa_overstyrning(period: str, forsamling: str, ny_andamal: str,
            meddelande_filter=meddelande_filter, datum_fran=datum_fran, datum_till=datum_till)
 
 
+def uppdatera_overstyrning(id: int, ny_andamal: str, ny_typ: str = "",
+                           ny_tillfallesdatum: str = "", orsak: str = "",
+                           av_vem: str = "") -> None:
+    """Uppdaterar malet (andamal/typ/tillfallesdatum) pa en befintlig overstyrning.
+    Urvalet (tx_ids/filter) behalls. Loggar en 'andrad'-post i historiken."""
+    with Session(engine) as s:
+        rad = s.get(OverstyrningRad, id)
+        if rad is None:
+            return
+        period = rad.period
+        gammalt = f"{rad.forsamling or '—'} → {rad.ny_andamal}"
+        rad.ny_andamal = ny_andamal
+        rad.ny_typ = ny_typ
+        rad.ny_tillfallesdatum = ny_tillfallesdatum
+        rad.orsak = orsak
+        urval = _beskriv_urval(_ptxids(rad.tx_ids), rad.meddelande_filter,
+                               rad.datum_fran, rad.datum_till)
+        scope, tx_ids = rad.forsamling, rad.tx_ids
+        mfilter, dfran, dtill = rad.meddelande_filter, rad.datum_fran, rad.datum_till
+        s.commit()
+    _logga(period, "overstyrning", "ändrad",
+           f"{gammalt} ⟶ {ny_andamal} ({urval})", av_vem, scope=scope, tx_ids=tx_ids,
+           meddelande_filter=mfilter, datum_fran=dfran, datum_till=dtill)
+
+
 def ta_bort_overstyrning(id: int) -> None:
     with Session(engine) as s:
         rad = s.get(OverstyrningRad, id)

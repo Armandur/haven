@@ -4,7 +4,9 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
-- [ ] **Redigera befintliga ändamålsöverstyrningar** (inte bara ta bort + skapa
+- [x] **Redigera befintliga ändamålsöverstyrningar** (klar) - Ändra-knapp
+  som förifyller ett redigeringsformulär och uppdaterar målet (ändamål/typ/
+  tillfällesdatum); urvalet behålls, historiken loggar 'ändrad'. TIDIGARE:
   ny). "Ändra"-knapp per överstyrning som förifyller formuläret (som mottagare i
   /konfig) och uppdaterar raden i stället för att skapa ny, med "ändrad"-post i
   historiken. MVP: ändra målet (ändamål/typ/tillfällesdatum) och behåll urvalet;
