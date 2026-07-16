@@ -28,8 +28,24 @@ Systemet är byggt med ASP.NET MVC + jQuery/jQuery UI (widgets: `hasDatepicker`,
 - Registrera belopp på befintligt eget tillfälle: Meny **Kollekt → Kollektbelopp – registrera** → lista "tillfällen med ej registrerade belopp" (idag + 60 dagar bakåt) → klick på rad → samma `CollectionOccasion/Main?collectionOccasionid=...`-vy.
 - Om tillfället inte finns i den listan: **Sök kollekttillfälle** (Meny Sök → Kollekttillfälle, eller knappen på registreringslistan) → `GET /Collection/CollectionOccasionSearch/Search` – formuläret postar som querystring, t.ex. `?Type={GUID}&Purpose=&ReadyMarked=&OccasionDateFrom=&OccasionDateTo=`, dvs **parametriserbart/deep-linkbart**.
 
-### 1.2 Komplettera vs. skapa
-Eftersom övningssystemet saknade registrerade församlingskollekter skapades ett nytt tillfälle från grunden för att kartlägga hela vägen. Beslutsregel för userscriptet: sök alltid först (Sök kollekttillfälle med Typ=Församlingskollekt + datumintervall + ändamål). Hittas exakt en träff på rätt datum/ändamål/kollektställe → öppna och komplettera belopp. Hittas ingen träff → skapa nytt tillfälle.
+### 1.2 Komplettera vs. skapa (beslutslogik för userscriptet)
+**Normalfallet är att komplettera ett befintligt tillfälle, inte skapa nytt.** Vi
+registrerar Swish-beloppen **månaden efter** gudstjänsten, då tillfället oftast
+redan finns - en kollega har vanligen redan skapat och klarmarkerat det och
+registrerat kontantbeloppet (se 1.7). Userscriptet ska därför alltid **söka först**
+via **Sök kollekttillfälle** (Typ=Församlingskollekt + tillfällesdatum + ändamål):
+
+1. **Exakt en träff** på rätt datum/ändamål (och kollektställe) → öppna och
+   **komplettera** belopp (lägg till Swish-rad per kollektställe via gröna +, se 1.7).
+2. **Ingen träff** → **skapa nytt** tillfälle (skapa → klarmarkera → registrera belopp).
+3. **Flera träffar / tvetydigt** (t.ex. flera tillfällen samma dag/ändamål, eller
+   osäkert om ett annat befintligt tillfälle egentligen ska användas) → **fråga
+   användaren** och låt hen välja vilket tillfälle som ska kompletteras, eller om ett
+   nytt ska skapas. Gissa aldrig.
+
+Eftersom userscriptet ändå ska **stanna för manuell granskning** före Spara (se 7),
+är det naturligt att presentera sökresultatet och låta människan bekräfta valet -
+särskilt i fall 3. Skapa-vägen (fall 2) används bara när sökningen är tom.
 
 ### 1.3 Fältlista – Kollekttillfälle (skapa nytt)
 | Etikett | Typ | Selektor | Möjliga värden | Håven-fält |
@@ -233,7 +249,12 @@ Detta är **inte** en särskild KOB-funktion utan samma formulär som avsnitt 3,
 - **Injicera en knapp i KOB** (t.ex. i headern) som läser Håvens underlag från **urklipp som JSON** (Håven får en "kopiera underlag som JSON"-knapp i registreringskön). En post i JSON: `{posttyp: "F"|"R"|"S"|"insamling"|"sarskild"|"per_andamal", forsamling, kollektstalle, datum, andamal, beskrivning, oronmarkning, belopp, inbetalningsmetod: "Swish 1"}`.
 - **Fyll ett formulär i taget**, aldrig batch över flera sidor utan granskning. Sätt fältvärden och **trigga `input`+`change`-event** på varje fält (särskilt belopp och native selects) så jQuery-bindningarna uppdateras.
 - **Radmatchning** i belopps-tabeller: hitta rätt `<tr>` via textinnehåll i Församling/Kollektställe-cellerna, sätt sedan `input[name="amount.Amount"]` och `select[name="amount.PaymentMethod*"]` i den raden. För flera inbetalningsmetoder: klicka +-ikonen i radens sista `<td>` och fyll den nya raden.
-- **Komplettera-vs-skapa (F):** sök först (deep-link Sök-URL med Type+datum+ändamål); komplettera vid träff, annars skapa. **R/S:** sök alltid, komplettera bara – skapa aldrig.
+- **Komplettera-vs-skapa (F):** normalfallet är komplettera (vi jobbar månaden
+  efter, tillfället finns oftast redan). Sök alltid först (deep-link Sök-URL med
+  Type+datum+ändamål): **1 träff** → komplettera (lägg till Swish-rad via +);
+  **0 träffar** → skapa nytt; **flera/tvetydigt** → fråga användaren vilket
+  tillfälle (eller om nytt ska skapas), gissa aldrig. **R/S:** sök alltid,
+  komplettera bara – skapa aldrig.
 - **Stanna före Spara** i skarpt läge: markera de ifyllda fälten och låt människan granska och klicka Spara/hantera gränsvärdesvarningen. **Attestering och PIN sker alltid manuellt** - scriptet rör dem aldrig.
 - **Gränsvärdesvarning:** upptäck `div.noty_bar.noty_type_warning`; i skarpt läge, låt människan klicka "Ja"/"Nej" (klicka inte automatiskt).
 
