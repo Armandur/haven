@@ -329,3 +329,18 @@ def test_import_ta_emot(tmp_path, monkeypatch):
         imp.ta_emot("kob_kollekt", "trasig.xls", b"inte en xls")
     assert not (tmp_path / "KOB_ParishCollectionReport_uppladdad.xls").exists()
     assert not list(tmp_path.glob("*tmp*"))
+
+
+def test_json_export(res):
+    """JSON-exporten ur registreringskön ska ha rätt struktur för userscriptet."""
+    from collections import Counter
+    from app.services.ko_service import bygg_export
+    d = bygg_export(res)
+    assert d["period"] == "2026-05" and d["kalla"] == "Håven"
+    assert d["antal_poster"] == len(d["poster"])
+    c = Counter(p["typ"] for p in d["poster"])
+    assert c["F"] == 10 and c["R"] == 1 and c["S"] == 1
+    assert c["insamling_manad"] == 3 and c["per_andamal"] == 3
+    rs = next(p for p in d["poster"] if p["typ"] == "R")
+    assert rs["delposter"] and all("." in dp["belopp"] for dp in rs["delposter"])
+    assert all(p["inbetalningsmetod"] == "Swish 1" for p in d["poster"])

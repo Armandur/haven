@@ -245,6 +245,60 @@ def standard_rapportfil() -> Path | None:
     return None
 
 
+def bygg_export(res: Pipelineresultat) -> dict:
+    """Registreringsunderlaget som JSON-struktur för KOB-userscriptet.
+
+    En post per registreringsenhet enligt docs/KOB-INMATNING.md. Belopp som
+    strängar med punkt-decimal (öresäkert); userscriptet formaterar om till KOB:s
+    komma-format. KOB-specifik mappning (mottagare, kollektställe) avgörs av
+    userscriptet/handläggaren - här ligger bara det Håven faktiskt vet.
+    """
+    rap, u = res.rapport, res.underlag
+    poster: list[dict] = []
+
+    for p in u.f_poster:
+        poster.append({
+            "typ": "F", "kob_flode": "kollekt", "forsamling": p.forsamling,
+            "kollektstalle": None, "datum": p.datum.isoformat(),
+            "andamal": p.andamal, "belopp": str(p.belopp),
+            "inbetalningsmetod": INBETALNINGSMETOD,
+        })
+    for g in u.rs_grupper:
+        poster.append({
+            "typ": g.kollekttyp, "kob_flode": "kollekt_gemensam",
+            "andamal": g.andamal, "datum": g.datum.isoformat(),
+            "summa": str(g.summa), "inbetalningsmetod": INBETALNINGSMETOD,
+            "delposter": [{"forsamling": d.forsamling, "belopp": str(d.belopp)}
+                          for d in g.delposter],
+        })
+    for p in u.gava_manad:
+        poster.append({
+            "typ": "insamling_manad", "kob_flode": "insamling_gava", "kob_typ": "Gåva",
+            "verksamhet": p.verksamhet, "beskrivning": p.verksamhet,
+            "period": p.period, "belopp": str(p.belopp),
+            "inbetalningsmetod": INBETALNINGSMETOD,
+        })
+    for p in u.gava_sarskilda:
+        poster.append({
+            "typ": "sarskild", "kob_flode": "insamling_gava",
+            "kob_typ": "Insamlingsaktivitet", "verksamhet": p.verksamhet,
+            "namn": p.namn, "oronmarkning": p.oronmarkning, "belopp": str(p.belopp),
+            "inbetalningsmetod": INBETALNINGSMETOD,
+        })
+    for p in u.gava_per_andamal:
+        poster.append({
+            "typ": "per_andamal", "kob_flode": "insamling_gava", "kob_typ": "Gåva",
+            "verksamhet": p.verksamhet, "andamal": p.andamal, "belopp": str(p.belopp),
+            "inbetalningsmetod": INBETALNINGSMETOD,
+        })
+
+    return {
+        "kalla": "Håven", "version": 1, "period": rap.period,
+        "rapport": rap.filnamn, "inbetalningsmetod": INBETALNINGSMETOD,
+        "antal_poster": len(poster), "poster": poster,
+    }
+
+
 def ladda_ko(swish_sokvag: str | Path) -> KoVy:
     swish_sokvag = Path(swish_sokvag)
     rapport = las_rapport(swish_sokvag)

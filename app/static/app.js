@@ -176,3 +176,35 @@
   }
   cb.addEventListener("change", applicera);
 })();
+
+// Arbetskö: kopiera registreringsunderlaget som JSON (för KOB-userscriptet).
+// Fallback till execCommand eftersom Clipboard-API:t blockeras på icke-secure origin.
+(function () {
+  "use strict";
+  var btn = document.getElementById("export-json");
+  if (!btn) return;
+  var ta = document.getElementById("export-textarea");
+  var status = document.getElementById("export-status");
+  btn.addEventListener("click", function () {
+    btn.setAttribute("aria-busy", "true");
+    fetch(btn.dataset.url, { headers: { "Accept": "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("fel " + r.status); return r.json(); })
+      .then(function (data) {
+        var txt = JSON.stringify(data, null, 2);
+        ta.value = txt; ta.hidden = false;
+        ta.focus(); ta.select(); ta.setSelectionRange(0, txt.length);
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { /* ignore */ }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(function () { ok = true; }, function () {});
+        }
+        status.hidden = false;
+        status.textContent = (ok ? "✓ kopierat till urklipp" : "markera i rutan och kopiera")
+          + " · " + data.antal_poster + " poster";
+      })
+      .catch(function (e) {
+        status.hidden = false; status.textContent = "Kunde inte hämta: " + e.message;
+      })
+      .finally(function () { btn.removeAttribute("aria-busy"); });
+  });
+})();

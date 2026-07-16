@@ -96,9 +96,10 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   fullständig spec (selektorer, flöden, komplettera-vs-skapa, R/S-gruppering,
   gränsvärdesvarning, attest-spärr) kartlagd mot KOB:s övningssystem. Prompten
   som användes: `docs/kob-inmatning-prompt.md`.
-- [ ] **JSON-export ur registreringskön** i Håven ("kopiera underlag som JSON"),
-  med fälten userscriptet behöver (posttyp, församling/kollektställe, datum,
-  ändamål/beskrivning, öronmärkning, belopp, inbetalningsmetod=Swish 1).
+- [x] **JSON-export ur registreringskön** (klar) - "Kopiera underlag som JSON" på
+  `/ko` + endpoint `/ko/export.json`. En post per registreringsenhet (F,
+  R/S med delposter, insamling månad/särskild/per-ändamål), öresäkra strängbelopp,
+  Swish 1. Kontraktet som userscriptet läser (bygg_export i ko_service).
 - [ ] **Userscriptet** som läser JSON:en och förifyller KOB enligt
   `docs/KOB-INMATNING.md`. Skilj komplettera vs skapa; skapa aldrig R/S; stanna
   för manuell granskning + Spara; attestering/PIN alltid manuellt. Kvarstår att

@@ -40,7 +40,7 @@ from app.services.import_service import ta_emot
 from app.services.konfig_service import ladda_konfig_till_minne
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
-from app.services.ko_service import KoVy, ladda_ko, standard_rapportfil
+from app.services.ko_service import KoVy, bygg_export, ladda_ko, standard_rapportfil
 from app.services.status_service import bygg_status
 
 router = APIRouter()
@@ -112,6 +112,12 @@ def arbetsko(request: Request):
     return templates.TemplateResponse(request, "ko.html", {
         "vy": vy, "vald": _aktuell_fil(request).name,
     })
+
+
+@router.get("/ko/export.json")
+def ko_export(request: Request):
+    vy = _vy(request)
+    return JSONResponse(bygg_export(vy.resultat))
 
 
 @router.post("/ko/bekrafta")

@@ -225,3 +225,8 @@ p.hv-badge { white-space: normal; }
 
 .hv-baradiff { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-weight: 600; }
 .hv-baradiff input { margin: 0; }
+
+/* JSON-export i arbetskön */
+.hv-export { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 1rem; }
+.hv-export button { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
+.hv-export textarea { width: 100%; margin: 0.4rem 0 0; font-family: monospace; font-size: 0.78rem; }

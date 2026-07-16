@@ -99,6 +99,14 @@
   <span class="hv-rakning"><span id="hv-klara">{{ vy.klara }}</span> / {{ vy.totalt }} klara</span>
 </div>
 
+<div class="hv-export">
+  <button type="button" id="export-json" class="secondary outline"
+          data-url="/ko/export.json?fil={{ vald|urlencode }}">Kopiera underlag som JSON</button>
+  <a href="/ko/export.json?fil={{ vald|urlencode }}" target="_blank" rel="noopener" class="hv-swish">öppna JSON</a>
+  <span id="export-status" class="hv-swish" hidden></span>
+  <textarea id="export-textarea" hidden readonly rows="6"></textarea>
+</div>
+
 <div class="hv-tabs">
   <input type="radio" name="kotab" id="tab-koll" checked>
   <input type="radio" name="kotab" id="tab-gava">
