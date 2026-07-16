@@ -196,6 +196,22 @@ async def spara_alias_route(request: Request, kanoniskt: str = Form(...),
     return _redir_konfig(request)
 
 
+@router.get("/kalender")
+def kalender_vy(request: Request):
+    from app.core.ingest_kalender import las_kalender
+    kalfil = DATA_DIR / KALENDER_FIL
+    finns = kalfil.exists()
+    grupper: dict = {}
+    if finns:
+        for r in las_kalender(kalfil):
+            grupper.setdefault(r.forsamling, []).append(r)
+    fil = _aktuell_fil(request)
+    return templates.TemplateResponse(request, "kalender.html", {
+        "vald": fil.name if fil else None,
+        "grupper": grupper, "kalenderfil": KALENDER_FIL, "finns": finns,
+    })
+
+
 @router.get("/omatchade")
 def omatchade(request: Request):
     vy = _vy(request)

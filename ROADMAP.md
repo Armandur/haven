@@ -4,13 +4,16 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
-- [ ] **Filuppladdning i webben.** Idag läses alla filer från `data/`-katalogen på
-  disk (måste läggas dit via SFTP) - det finns ingen uppladdning i UI:t. Handläggaren
-  behöver kunna ladda upp månadens Swish-rapport (.xlsx) och de två KOB-exporterna
-  (.xls), och gärna årets ändamålskalender. Sparas i `HAVEN_DATA_DIR` med sanerat
-  filnamn, valideras (rätt filändelse + testparsas för begripligt fel), async med
-  spinner enligt konvention men progressivt (funkar utan JS). **Hög prioritet** -
-  verktyget är i praktiken oanvändbart för handläggaren utan detta.
+- [x] **Visa ändamålskalendern** (`/kalender`) - läsvy per församling; ny kalender
+  för nytt år laddas upp via kalender-slotten på översikten. (klar)
+- [x] **Filuppladdning i webben.** (klar) Uppladdning på översikten av Swish-rapport,
+  KOB-exporter och kalender: en request per fil (per-fil-persistens), begränsad
+  parallellitet, per-fil-progress och full felmeddelandetext, temp-fil + testparsning
+  med atomisk spar (trasig fil ersätter aldrig fungerande). Progressivt (funkar utan JS).
+- [x] **Import-fellogg** - fel per fil visas med full text i uppladdnings-overlayn. (klar)
+- [x] **/konfig: Ändra/Ta bort på samma rad.** (klar)
+- Not: mottagar-/församlingskonfigen är **global**, inte per fil - "upptäckta"
+  mappningar ackumuleras och gäller alla filer (redan uppfyllt av datamodellen).
 
 - [x] **Fäll ut berörda rader i historiken.** (klar) Varje historikpost på
   `/justeringar` kan expanderas och visa exakt vilka transaktionsrader ändringen

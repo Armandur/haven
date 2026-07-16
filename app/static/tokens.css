@@ -147,6 +147,8 @@ p.hv-badge { white-space: normal; }
   border-bottom: 1px solid var(--pico-muted-border-color);
 }
 .hv-forts { font-size: 0.8rem; font-weight: 400; color: var(--pico-muted-color); }
+.hv-kalgrupp { margin-bottom: 0.5rem; }
+.hv-kalgrupp summary { cursor: pointer; padding: 0.4rem 0; font-size: 1.02rem; }
 
 /* Break-in-kort for riks-/stiftskollekter */
 .hv-post.hv-breakin { margin-left: 0.75rem; border-left-width: 5px; background: var(--pico-card-sectioning-background-color); }

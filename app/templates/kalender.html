@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titel %}Kalender{% endblock %}
+{% block content %}
+<h1>Ändamålskalender</h1>
+<p class="hv-meta">Källa: <code>{{ kalenderfil }}</code> - Excel-filen är sanningskälla.
+Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
+
+{% if not finns %}
+<article>
+  <p class="hv-badge varning">Ingen kalenderfil hittades</p>
+  Lägg <code>{{ kalenderfil }}</code> i data-katalogen eller ladda upp den på
+  <a href="/">översikten</a>.
+</article>
+{% else %}
+{% for forsamling, rader in grupper.items() %}
+<details class="hv-kalgrupp">
+  <summary><strong>{{ forsamling }}</strong> <span class="hv-swish">{{ rader|length }} tillfällen</span></summary>
+  <figure><table>
+    <thead><tr><th>Datum</th><th>Veckodag</th><th>Kyrklig helgdag</th><th>Typ</th><th>Ändamål</th></tr></thead>
+    <tbody>
+      {% for r in rader %}
+      <tr>
+        <td>{{ r.datum }}</td>
+        <td>{{ r.veckodag }}</td>
+        <td>{{ r.helgdag }}</td>
+        <td>{% if r.typ %}<span class="hv-badge typ-{{ r.typ.value|lower }}">{{ r.typ.value }}</span>{% endif %}</td>
+        <td>{{ r.andamal or '' }}{% if not r.andamal %}<span class="hv-tomt">(saknas)</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></figure>
+</details>
+{% endfor %}
+{% endif %}
+{% endblock %}
