@@ -1,0 +1,31 @@
+{
+  "kalla": "Håven",
+  "version": 1,
+  "period": "2026-07",
+  "rapport": "TEST utbildning (Östervåla-Harbo pastorat)",
+  "inbetalningsmetod": "Swish 1",
+  "kommentar": "Testunderlag för KOB-utbildningsmiljön. Församlingar/ändamål avser Östervåla-Harbo, inte skarp Härnösands-data. Se userscript/README-TEST.md.",
+  "antal_poster": 2,
+  "poster": [
+    {
+      "typ": "F",
+      "kob_flode": "kollekt",
+      "forsamling": "Harbo församling",
+      "kollektstalle": null,
+      "datum": "2026-07-16",
+      "andamal": "Testkollekt userscript-kartläggning",
+      "belopp": "150.25",
+      "inbetalningsmetod": "Swish 1"
+    },
+    {
+      "typ": "F",
+      "kob_flode": "kollekt",
+      "forsamling": "Östervåla församling",
+      "kollektstalle": null,
+      "datum": "2026-07-15",
+      "andamal": "Diakonala hjälpfonden",
+      "belopp": "275.50",
+      "inbetalningsmetod": "Swish 1"
+    }
+  ]
+}

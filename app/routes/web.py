@@ -120,7 +120,9 @@ def ko_export(request: Request):
     return JSONResponse(bygg_export(vy.resultat))
 
 
-_USERSCRIPT_FIL = Path(__file__).resolve().parents[2] / "userscript" / "haven-kob.user.js"
+_USERSCRIPT_DIR = Path(__file__).resolve().parents[2] / "userscript"
+_USERSCRIPT_FIL = _USERSCRIPT_DIR / "haven-kob.user.js"
+_TEST_UNDERLAG_FIL = _USERSCRIPT_DIR / "test-underlag-utb.json"
 
 
 @router.get("/kob-userscript.user.js")
@@ -131,6 +133,16 @@ def kob_userscript():
         raise HTTPException(status_code=404, detail="Userscriptet saknas.")
     return FileResponse(_USERSCRIPT_FIL, media_type="text/javascript",
                         filename="haven-kob.user.js", content_disposition_type="inline")
+
+
+@router.get("/kob-test-underlag.json")
+def kob_test_underlag():
+    """Testunderlag för KOB-utbildningsmiljön (Östervåla-Harbo). Peka
+    userscriptets 'Hämta från Håven'-URL hit för att testa utan skarp data."""
+    if not _TEST_UNDERLAG_FIL.exists():
+        raise HTTPException(status_code=404, detail="Testunderlaget saknas.")
+    return FileResponse(_TEST_UNDERLAG_FIL, media_type="application/json",
+                        content_disposition_type="inline")
 
 
 @router.post("/ko/bekrafta")
