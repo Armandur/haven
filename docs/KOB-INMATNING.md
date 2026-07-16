@@ -1,156 +1,172 @@
 # KOB-INMATNING.md
-Teknisk spec för userscript som förifyller KOB:s inmatningsformulär utifrån Håvens registreringsunderlag.
-Kartlagd 2026-07-16 mot KOB Övningssystem (version 2025.3.2), jämförd mot KOB-handboken (14 maj 2025-utgåvan).
+**Underlag för Tampermonkey/Violentmonkey-userscript – halvautomatisk registrering av Håvens Swish-underlag i KOB**
+Baserat på: KOB-handboken (HTML-referens, uppdaterad enligt egen historik 14 maj 2025) + live-verifiering i KOB:s övningssystem (`kob-utb.svenskakyrkan.se`, KOB-version 2025.3.2) den 16 juli 2026, inloggad som Lars Martinsson (KOBAlla1), enhet Östervåla-Harbo pastorat.
 
-Systemet är byggt med ASP.NET MVC + jQuery/jQuery UI (widgets: `hasDatepicker`, `ui-autocomplete-input`, `ui-selectmenu`-liknande combo-fält). Inget React/Angular/Vue. Inget synligt CSRF-token-fält hittades i formulären (auth sker via sessionscookie) – notera dock att detta INTE är verifierat på nätverksnivå, bara i DOM.
+> **Viktigt om denna körning:** Fokus har legat på församlingskollekt-flödet (Sök kollekttillfälle, komplettera, gröna +) samt Riks-/Stiftskollekt-komplettering, eftersom detta inte kunde live-verifieras i en tidigare kartläggning. Insamling/gåva-formuläret har verifierats översiktligt live denna gång. Allt nedan är antingen (a) **live-verifierat** i övningssystemet idag, eller (b) markerat **[handbok, ej live-verifierat denna körning]**.
 
-> **Not (Håven):** Denna fil är svaret från Claude-for-Chrome-kartläggningen (se `docs/kob-inmatning-prompt.md`). Inklistringen kapades mitt i avsnitt 6 (gemensam fältordlista); den delen är kompletterad ur avsnitt 1–5 och tydligt märkt. Om originalets avsnitt 6 hade fler rader/nyanser, klistra in svansen så uppdaterar vi.
-
----
-
-## 0. Gemensamt för alla flöden
-
-- Aktiv enhet väljs i headern (`select#global_unitselect`). Detta styr vilket pastorat/vilka församlingar som är tillgängliga i formulären. Userscriptet bör läsa/verifiera detta värde innan ifyllning, och INTE ändra det automatiskt utan att användaren ser det.
-- Sidor laddas som vanliga MVC-sidor (full navigation), men Spara-knappar gör AJAX-anrop (ingen redirect). Resultat visas som en grön/röd "noty"-notis (`div.noty_bar`, `div.noty_message`) mitt i sidan.
-- Gränsvärdesvarningen och vissa andra varningar renderas också via **noty** (`div.noty_bar.noty_type_warning`) med knappar `button#button-0` ("Ja") och `button#button-1` ("Nej") i en `div.noty_buttons`. OBS: id:n `button-0`/`button-1` är sannolikt inte garanterat unika/stabila mellan noty-instanser – identifiera hellre knappen via text ("Ja"/"Nej") inom `.noty_bar` som är synlig i DOM just då.
-- Belopp skrivs med **komma som decimaltecken** (t.ex. `1234,50`). Efter sparning visas beloppet omformaterat med mellanslag som tusentalsavgränsare (t.ex. `1 234,50`). Skriv alltid in med komma, aldrig punkt.
-- Datumfält (`OccasionDate`, `CollectedDate`) är jQuery UI-datepicker (`hasDatepicker`) men accepterar direkt textinmatning i formatet `YYYY-MM-DD` utan att datepicker-kalendern behöver öppnas. Tryck Escape eller klicka utanför för att stänga ev. kalender-popup innan nästa fält fylls i.
-- Flera `id`-attribut i rad-tabeller (kollektbelopp, insamlingsrader) är **inte unika** – samma `id` (t.ex. `amount_Amount`, `amount_PaymentMethodID`) återanvänds i varje tabellrad (`tr.amountRow.odd/even`). Rader har inga data-GUID-attribut. Identifiera rätt rad via textinnehållet i kolumnerna "Församling"/"Kollektställe" i samma `<tr>`, inte via id/name.
-- Ingen synlig CSRF-token i formulären. Inga iframes påträffade i något av flödena.
+> **Not (Håven) om provenance:** Under kartläggningen i övningssystemet (a) sattes en PIN-kod (`1234`) på övningskontot KOBAlla1 när systemet krävde det för attest-test, och (b) skapades testdata (nytt F-tillfälle 2026-07-19 "Diakoni - test Håven", samt tillagda belopp på ett F- och ett R-tillfälle). Attesteringen misslyckades ("Användaren saknar attesträtt") - kontot är registrerare men inte attesterare i miljön - så scenariot "attesterad kontant → komplettera Swish" kunde INTE köras end-to-end (kontantraden förblev i status E). Se öppen punkt i 1.3.
+>
+> **Not (Håven) om denna fil:** Den live-verifierade inklistringen kapades mitt i avsnitt 2.4. Avsnitt 3 och framåt (Insamling/gåva, fältordlista, rekommendation, öppna punkter) är därför tills vidare **den föregående passets version** (märkt som bilaga längst ned) och ersätts när svansen på den nya körningen klistras in.
 
 ---
 
-## 1. Församlingskollekt (F)
+## 0. Allmänt om KOB:s tekniska ramverk
+
+- Klassisk server-renderad ASP.NET MVC-app (URL-mönster `/KOB_Utb1/Web/<Kontroller>/<Action>`), **inga iframes** påträffade i kollekt-/insamlingsflödet.
+- jQuery + jQuery UI genomgående. Dropdown-fält är i huvudsak **native `<select>`** (kan sättas med `.value` + `change`-event) – **utom** sök-fält för mottagare/öronmärkning som är **jQuery UI Autocomplete** (`class="ui-autocomplete-input"`) och kräver riktig tangentbordsinmatning (skriv text → vänta på förslagslista → klicka/piltangent+Enter på ett `<li>` i `.ui-autocomplete`-menyn). Att bara sätta `.value` fyller INTE i den dolda id-referensen som krävs för att spara.
+- Tabeller i sök-/inkorgslistor är **jQuery DataTables** (`class="... dataTable"`). Varje rad har ofta ett **dolt datafält** (t.ex. tillfällets GUID) som inte visas som kolumn men finns i DataTables interna data-array – hämtas med `$('#tabellId').DataTable().row(rowEl).data()` (sista elementet i arrayen). Rader saknar `href`/`onclick`-attribut i DOM:en; klick hanteras av en delegated jQuery-handler på tabellen.
+- Bekräftelse-/varningsdialoger (gränsvärdesvarning, PIN-dialog, felmeddelanden) renderas med **noty.js** – knappar får dynamiska id:n (`button-0`, `button-1` osv.) men ligger i en `.noty_buttons`-container och kan identifieras på synlig text ("Ja"/"Nej"/"OK").
+- **Ingen `__RequestVerificationToken`** hittades i formulären vi undersökte – detta talar för att scriptet ska agera genom att fylla i fält och klicka riktiga knappar (som en människa), INTE genom egna AJAX/fetch-anrop, vilket också är i linje med kravet att en människa ska granska och trycka Spara.
+- Belopp: decimalkomma (`1500,75`), autoformateras vid visning med mellanslag som tusentalsavgränsare (`1 500,75`). Fältet accepterar ören direkt vid inmatning.
+- Datum: fritextfält med jQuery UI-datepicker-ikon; `ÅÅÅÅ-MM-DD` fungerar utmärkt vid direkt typing (handboken nämner även `ÅÅMMDD` som kortkommando-genväg).
+- Automatisk utloggning: enligt handboken 60 minuter av inaktivitet [handbok]. En session-timeout-dialog ("Fortsätt arbeta" / "Till inloggningssidan", id:n `#continue`/`#home`) finns färdigrenderad dold på varje sida.
+- **Gränsvärdesvarning** (live-verifierad flera gånger): vid Spara av ett kollektbelopp utanför församlingens gränsvärde visas dels en inline-varning i tabellraden ("Kollektbeloppet är högre än det angivna gränsvärdet på 500,00"), dels en noty-modal: *"Formuläret innehåller 1 varning(ar) för belopp utanför gränsvärdena. Se markering vid registrerade belopp. Vill du spara ändå?"* med knappar **Ja**/**Nej**. Scriptet måste kunna identifiera och klicka **Ja** (eller lämna kvar dialogen synlig för användaren att bekräfta manuellt – rekommenderas, se avsnitt "Rekommendation för userscript").
+
+---
+
+## 1. Församlingskollekt (F) — huvudflödet i denna körning
 
 ### 1.1 Navigering
-- Skapa nytt tillfälle: Meny **Kollekt → Kollekttillfälle – skapa nytt** → `GET /KOB_Utb1/Web/Collection/CollectionOccasion/Main` (utan querystring = tomt formulär).
-- Efter sparat tillfälle: URL blir `.../Collection/CollectionOccasion/Main?collectionOccasionid={GUID}` – deep-linkbar.
-- Registrera belopp på befintligt eget tillfälle: Meny **Kollekt → Kollektbelopp – registrera** → lista "tillfällen med ej registrerade belopp" (idag + 60 dagar bakåt) → klick på rad → samma `CollectionOccasion/Main?collectionOccasionid=...`-vy.
-- Om tillfället inte finns i den listan: **Sök kollekttillfälle** (Meny Sök → Kollekttillfälle, eller knappen på registreringslistan) → `GET /Collection/CollectionOccasionSearch/Search` – formuläret postar som querystring, t.ex. `?Type={GUID}&Purpose=&ReadyMarked=&OccasionDateFrom=&OccasionDateTo=`, dvs **parametriserbart/deep-linkbart**.
+| Vy | URL | Metod |
+|---|---|---|
+| Skapa nytt kollekttillfälle | `/KOB_Utb1/Web/Collection/CollectionOccasion/Main` | GET (tomt formulär) |
+| Öppna befintligt tillfälle | `/KOB_Utb1/Web/Collection/CollectionOccasion/Main?collectionOccasionid=<GUID>` | **Deep-linkbart** – live-verifierat: navigerar direkt till rätt tillfälle utan extra klick. |
+| Sök kollekttillfälle | `/KOB_Utb1/Web/Collection/CollectionOccasionSearch/Search` | GET, **deep-linkbart via querystring** (se 1.2) |
+| Registrera kollektbelopp (inkorg) | `/KOB_Utb1/Web/Collection/CollectionOccasionSearch/CollectionAmountReg` | Lista över tillfällen med ej registrerade belopp (idag + 60 dgr bakåt) |
+| Kollekttillfällen – klarmarkera | `/KOB_Utb1/Web/Collection/CollectionOccasionSearch/NotReadyMarkedCollectionOccasions` | Lista över ej klarmarkerade tillfällen |
+| Kollektbelopp – ej attesterade | `/KOB_Utb1/Web/Collection/CollectionOccasionSearch/UnAttestedCollectionAmounts` | |
 
-### 1.2 Komplettera vs. skapa (beslutslogik för userscriptet)
-**Normalfallet är att komplettera ett befintligt tillfälle, inte skapa nytt.** Vi
-registrerar Swish-beloppen **månaden efter** gudstjänsten, då tillfället oftast
-redan finns - en kollega har vanligen redan skapat och klarmarkerat det och
-registrerat kontantbeloppet (se 1.7). Userscriptet ska därför alltid **söka först**
-via **Sök kollekttillfälle** (Typ=Församlingskollekt + tillfällesdatum + ändamål):
+Menyväg: **Kollekt → Kollekttillfälle – skapa nytt / Kollektbelopp – registrera** samt **Sök → Kollekttillfälle**.
 
-1. **Exakt en träff** på rätt datum/ändamål (och kollektställe) → öppna och
-   **komplettera** belopp (lägg till Swish-rad per kollektställe via gröna +, se 1.7).
-2. **Ingen träff** → **skapa nytt** tillfälle (skapa → klarmarkera → registrera belopp).
-3. **Flera träffar / tvetydigt** (t.ex. flera tillfällen samma dag/ändamål, eller
-   osäkert om ett annat befintligt tillfälle egentligen ska användas) → **fråga
-   användaren** och låt hen välja vilket tillfälle som ska kompletteras, eller om ett
-   nytt ska skapas. Gissa aldrig.
+### 1.2 Sök kollekttillfälle — sökformulär (live-verifierat i detalj)
 
-Eftersom userscriptet ändå ska **stanna för manuell granskning** före Spara (se 7),
-är det naturligt att presentera sökresultatet och låta människan bekräfta valet -
-särskilt i fall 3. Skapa-vägen (fall 2) används bara när sökningen är tom.
+URL: `GET /KOB_Utb1/Web/Collection/CollectionOccasionSearch/Search`
 
-### 1.3 Fältlista – Kollekttillfälle (skapa nytt)
-| Etikett | Typ | Selektor | Möjliga värden | Håven-fält |
-|---|---|---|---|---|
-| Tillfällesdatum | text, datepicker | `input#OccasionDate[name=OccasionDate]` | fritt datum `YYYY-MM-DD` | gudstjänstdatum |
-| Kollekttyp | native select | `select#Type[name=Type]` | `5`=Församlingskollekt nationell organisation, `3`=till egna verksamheten, `4`=till extern kontakt (R/S visas EJ här – kan inte väljas av församling) | kollekttyp F (undertyp bestäms av ändamålets mottagare) |
-| Beslutat av | native select | `select#DecidedBy[name=DecidedBy]` | de enskilda församlingarna i aktiv enhet (GUID-värden) | församling |
-| Kollektändamål | text m. jQuery UI-autocomplete | `input#Purpose[name=Purpose]` | fritext (för "till egna verksamheten"/"till extern kontakt"); **skrivskyddat/auto-ifyllt** för "nationell organisation" (hämtas från Mottagare+Öronmärkning) | ändamål |
-| Kollektställe | native select | `select#CollectionLocationId[name=CollectionLocationId]` | `Alla` + kyrkor (GUID per kyrka) | kollektställe (kyrka) eller "Alla" |
-| Notering för egen uppföljning | textarea | `textarea#Note[name=Note]` | fritext | – (ej i Håven) |
-| Mottagare (endast "till extern kontakt") | sök+autocomplete | `input#input_search_mottagare` + knapp `input#collectionoccasion_contacts_add` | sökning bland kontaktregister | mottagare/extern kontakt |
-| Mottagare (endast "nationell organisation") | native select | `select#FNOReceiver[name=FNOReceiver]` | Act Svenska kyrkan / Svenska kyrkan i utlandet | mottagare |
-| Öronmärkning (endast "nationell organisation") | jQuery UI combo (dolt select + synlig autocomplete-input + sökknapp) | dolt `select#EarmarkAllId[name=EarmarkAllId].earmarkContributionDropdown` + synlig `input.ui-autocomplete-input` bredvid | "Ingen öronmärkning" eller insamlingstema (Act) / utlandsförsamlingar (Utlandet) | öronmärkning (om F-posten faktiskt är en nationell-org-kollekt) |
-| Spara | knapp | `button.create_occasion` (Alt+S) | – | – |
-| Spara och klarmarkera | knapp | `button.create_and_readymark_occasion` (Alt+K) | – | – |
+Formuläret är **fullt deep-linkbart via querystring**, men **auto-kör inte sökningen** – querystring-parametrar förifyller bara fälten; ett klick på `#btnSubmit` krävs fortfarande (bekräftat: navigering till `?Type=<guid>` prefyllde dropdownen men visade ingen resultatlista förrän Sök klickades).
 
-**Viktigt fynd:** För undertyp "till egna verksamheten" fylls **Mottagare-tabellen automatiskt** med egen enhet, 100 %. Klarmarkeringskravet (mottagare valda + 100 %) är alltså redan uppfyllt direkt, och "Spara och klarmarkera" lyckas i ett steg utan extra klick. Detta observerades live: två notiser kom i rad, "Kollekttillfället skapat." och "Kollekttillfället klarmarkerat.".
-
-**Öronmärkning är ett jQuery UI-widget-kombo** (dolt `<select>` synkat mot synligt textfält). Att bara sätta `.value` på det dolda select-elementet räcker sannolikt INTE – widgeten uppdaterar troligen bara sitt UI-state vid egna events. Säkraste metoden: klicka i det synliga sökfältet, skriv sökterm, vänta på dropdown-listan, klicka rätt `<li>`-alternativ (riktig musklick/`mousedown`), inte bara `.val()`.
-
-### 1.4 Fältlista – Kollektbelopp (registrera/komplettera)
-Tabellen "Kollektbelopp" har en rad per Församling×Kollektställe (skapas automatiskt utifrån vald Kollektställe = "Alla" eller specifik kyrka vid tillfällets skapande).
-
-| Kolumn | Typ | Selektor (id/name upprepas per rad – matcha via radens text) | Värden |
+| Etikett | Fälttyp | Selector | Värden / beteende |
 |---|---|---|---|
-| Kollekt ej upptagen | checkbox | `input.notCollected[name="amount.NotCollected"]` | true/false. Är den ikryssad grånas/inaktiveras Belopp, Nr kollektbok och Inbetalningsmetod i samma rad, och "lägg till rad"-ikonen (+) försvinner. |
-| Belopp | text | `input.amount[name="amount.Amount"]` (klass `amount numeric resetTimer marginZero rwInput`) | Svenskt talformat, komma decimal |
-| Nr kollektbok | text | `input[name="amount.VerificationNumber"]` | fritext/nummer |
-| Inbetalningsmetod | native select | `select[name="amount.PaymentMethodID"]` (synlig; det finns även en dold spegel `input.paymentMethodHidden`) | `Kontant`, `Kort`, `Swish 1`, `Swish 2` (GUID-värden, samma GUID-lista återkommer i alla belopps-tabeller i systemet) |
-| Lägg till rad (+) | ikonknapp | grön cirkel-ikon längst till höger i varje rad, ingen stabil id – identifiera via `tr.amountRow` + sista `<td>` i den specifika raden | Lägger till en ny, tom Belopp/Inbetalningsmetod-rad för **samma** Församling/Kollektställe (för att registrera samma kollekt uppdelad på fler inbetalningsmetoder) |
-| Ta bort (papperskorg) | ikonknapp | visas bara på redan sparade, ej attesterade rader | Tar bort ett registrerat men ej attesterat belopp |
-| Spara | knapp | `button` klass `bla` under tabellen, kortkommando Alt+S | Sparar alla ifyllda rader via AJAX |
+| Kollekttyp | `<select>` | `#Type` (name=`Type`) | `""`=[Alla], `0f2ebd4e-2981-43b9-ac08-eea25283b402`=Församlingskollekt nationell org, `cb0b0a3c-706a-4895-b2aa-91253565ec18`=Församlingskollekt, `7c73638d-9894-4417-9552-e72862d52afa`=Stiftskollekt, `8f5709f1-757c-4818-b972-331062377cce`=Rikskollekt |
+| Kollektändamål | text | `#Purpose` (name=`Purpose`) | Fritext, "innehåller"-sökning (ej live-verifierat exakt matchningsalgoritm) |
+| Status | `<select>` | `#ReadyMarked` (name=`ReadyMarked`) | `""`=[Alla], `1`=Klarmarkerade, `2`=Ej klarmarkerade |
+| Tillfällesdatum från/till | text+datepicker | `#OccasionDateFrom`, `#OccasionDateTo` (name samma) | Format `ÅÅÅÅ-MM-DD` |
+| Sök-knapp | `<input type=submit>` | `#btnSubmit` (value="Sök") | Kör den faktiska GET/AJAX-sökningen |
+| Rensa-knapp | `<input type=button>` | `#btnClear` | Nollställer formuläret |
+| Nytt kollekttillfälle-knapp | `<input type=button>` | `#btnCreateNew` | Går till skapa-nytt-formuläret (samma som menyn) |
 
-**Bekräftat live:** vid Spara med belopp som ligger utanför gränsvärdet visas en inline-varning direkt under raden: texten *"Kollektbeloppet är högre än det angivna gränsvärdet på 500,00"* i en gulmarkerad box, samtidigt som en noty-dialog med frågan *"Vill du spara ändå?"* och knappar **Ja**/**Nej** visas. Klick på **Ja** sparar ändå (toast: *"Kollektbeloppen sparade"*). Detta är exakt gränsvärdesvarningen ur handboken – bekräftad, och scriptet måste kunna klicka "Ja" (eller stanna och låta människan klicka).
+**Deep-link-exempel (live-verifierat):**
+`.../CollectionOccasionSearch/Search?Type=cb0b0a3c-706a-4895-b2aa-91253565ec18&Purpose=&ReadyMarked=&OccasionDateFrom=&OccasionDateTo=`
 
-Efter lyckad sparning: raden får en röd **E**-badge (Ej attesterade) i Församling-kolumnen, beloppet omformateras med tusentalsavgränsare, och en papperskorgsikon dyker upp (går att ta bort igen innan attest).
+**Resultatlista** (tabell `#collectionOccasionTable`, DataTables):
+- Kolumner: **Datum, Typ, Beslutat av, Kollektändamål** (endast dessa fyra syns).
+- Ett **dolt 5:e datafält per rad = tillfällets GUID** (`collectionOccasionId`), hämtningsbart via `$('#collectionOccasionTable').DataTable().row(idx).data()[4]`. Detta är den enda robusta vägen att få tag i ID:t programmatiskt utan att klicka.
+- Klick på raden (delegerad handler, ingen `href`/`onclick` i DOM) navigerar till `.../CollectionOccasion/Main?collectionOccasionid=<GUID>`.
+- Extra klientfilter: `Filtrera:`-textfält ovanför tabellen filtrerar redan hämtade rader lokalt (inte en ny sökning mot servern) – nyttigt för att i en stor lista (t.ex. 144 Rikskollekt-poster) snabbt hitta rätt datum utan omsökning.
+- Paginering: "Visa 25/50/… rader", "Första/Föregående/[sidnr]/Nästa/Sista".
+- **Flera träffar samma datum/ändamål kan förekomma** – live bekräftat att Rikskollekt-sökningen (144 träffar från 2015 och framåt) fungerar med denna lista; F-sökningen gav exakt 1 träff i vårt testfall.
 
-### 1.5 Klarmarkering / Välj-meny på befintligt tillfälle
-På ett redan skapat tillfälle finns knappen **Välj...** (`button` + hamburgerikon) uppe till höger. Menyn innehåller:
-- **Nytt** – öppnar tomt formulär för nytt tillfälle (samma som skapa nytt)
-- **Avklarmarkera** – tar bort klarmarkeringen (endast synlig på klarmarkerade F-tillfällen; INTE synlig på R/S – se 2.4)
-- **Kopiera** – duplicerar tillfället
+**Beslutslogik för scriptet (bekräftad i UI:t):**
+- **0 träffar** → inget kollekttillfälle finns; föreslå att skapa nytt (endast för F – **aldrig** för R/S, se 2.4).
+- **1 träff** → öppna direkt (klicka raden eller navigera till dess GUID) → komplettera-flöde.
+- **≥2 träffar** → **fråga användaren** vilket tillfälle som avses (t.ex. visa datum+ändamål+beslutat av för varje träff) – gissa aldrig.
 
-### 1.6 Attestering (endast kartlagt, ej fullföljt – se säkerhetsnot)
-Väg: Meny **Kollekt → Kollektbelopp – ej attesterade** → `GET /Collection/CollectionOccasionSearch/UnAttestedCollectionAmounts` → klick på rad → samma tillfällesvy men filtrerad till "Ej attesterade", med kryssrutor per rad + knapp **"Attestera valda rader"** (`button` grön, klass innehåller `bla`).
-Vid klick, om användaren saknar personlig PIN-kod visas först dialogen **"Skapa ny personlig 4-siffrig PIN-kod"** (fält "PIN-kod" + "Verifiera PIN-kod" + knappar **Klar**/**Avbryt**). Efter att PIN skapats försökte systemet attestera automatiskt och gav felmeddelandet: *"Ett eller flera kollektbelopp gick inte att attestera. Användaren saknar attesträtt. Registreras under Arkiv, Administrera användare."* — dvs. attestering kräver att man dessutom är registrerad i Attestregistret, vilket testanvändaren inte var. Jag valde **medvetet att INTE** gå vidare och lägga till attesträtt åt användaren i Administrera användare, eftersom det innebär att ändra behörigheter/åtkomstkontroll – något jag inte utför även i övningsmiljön. Attestflödets DOM (kryssrutor, knapp, PIN-dialog, felmeddelande) är dock fullt dokumenterat ovan.
+### 1.3 Komplettera-flöde från en träff (live-verifierat, inkl. "grön +" utan att röra kontantraden)
 
-### 1.7 Komplettera en befintlig F-kollekt (kollega har redan registrerat/attesterat kontantbeloppet)
-**Vanligt Håven-fall:** en kollega har redan skapat och klarmarkerat
-församlingskollekttillfället och registrerat (och kanske attesterat) det
-**kontanta** beloppet. Månaden efter ska vi komplettera samma tillfälle med det
-**swishade** beloppet.
+Öppnad detaljvy: `/Collection/CollectionOccasion/Main?collectionOccasionid=<GUID>`, tre hopfällbara paneler: **Grunduppgifter**, **Mottagare**, **Kollektbelopp**.
 
-- **Tillfället syns INTE i "Kollektbelopp – registrera"-listan** (den visar bara
-  tillfällen som *saknar* registrerade belopp; så fort ett kollektställe fått ett
-  belopp faller det ur listan). Använd därför **Sök kollekttillfälle** (deep-link,
-  se 1.1/2.1) med Typ=Församlingskollekt + datum + ändamål för att hitta det.
-- På tillfället: hitta rätt **kollektställe-rad** (matcha via text), klicka på den
-  **gröna +-ikonen** längst till höger på raden och fyll i en ny rad med Swish-
-  beloppet och Inbetalningsmetod = Swish 1. Handboken ("Lägg till ytterligare
-  belopp", s27) bekräftar: *det går att lägga till ett belopp där det redan finns
-  ett registrerat, makulerat, **attesterat** eller utbetalt belopp* – man ändrar
-  alltså inte kollegans kontantrad, man lägger till en egen Swish-rad bredvid.
-- Filterknappen **"alla"** i listen kollektbelopp visar alla kollektställen och
-  deras status (ska vara markerad vid registrering). Kollegans kontantbelopp har
-  status **A** (attesterat) och är låst - rör den inte; lägg bara till Swish-raden.
-- **Userscript-konsekvens:** komplettera-logiken får aldrig skriva över en
-  befintlig belopp-rad. Den ska, per kollektställe i underlaget, klicka + och fylla
-  i en **ny** Swish-rad. Attestering av den nya raden sker sedan manuellt som vanligt.
-- **Ej live-verifierat:** övningssystemet saknade F-kollekter, så denna exakta
-  sekvens (skapa F → registrera+attestera kontant → lägg till Swish via +) är
-  bekräftad via handboken men inte körd live. Bör testas i övning innan bygge (se avsnitt 8).
+**Kollektbelopp-tabellen** (en rad per kollektställe × redan registrerat belopp):
+
+| Kolumn | Fälttyp | Selector |
+|---|---|---|
+| Församling | text (läsvärde) | – |
+| Status-badge (E/A/M/B) | – | Bokstavskod: **E**=Ej attesterade, **A**=Attesterade, **M**=Makulerade, **B**=Betalda |
+| Kollektställe | text (läsvärde) | – |
+| Kollekt ej upptagen | checkbox | per rad |
+| Belopp | text | inuti raden, ett `<input type=text>` |
+| Nr kollektbok | text | frivilligt referensnummer |
+| Inbetalningsmetod | `<select>` | Options **live-verifierade**: `6b81b990-92e8-ef11-8392-0025b531002e`=Kontant, `d5abe2f8-dab7-ef11-8141-0025b501007a`=Kort, `d6abe2f8-dab7-ef11-8141-0025b501007a`=Swish 1, `d7abe2f8-dab7-ef11-8141-0025b501007a`=Swish 2 |
+| **Lägg till rad (grön +)** | `<img>` | `img.RowExpander[title="Lägg till ett nytt belopp för detta kollektställe"]` |
+| **Ta bort rad (papperskorg)** | `<div>` | `div.trashcan[title="Ta bort detta kollektbelopp"]` – syns bara på rader som redan har ett sparat belopp |
+| Spara (för hela beloppsformuläret) | `<button>` | text "Spara", klass `button slight gron` (ej unikt id – identifiera via närmaste `<button>` med den texten inom Kollektbelopp-panelen) |
+
+**Live-testat scenario ("komplettera med Swish via grön + utan att röra kontantraden"):**
+1. Ett kollektställe (Strandkyrkan) hade inget belopp → fyllde i 500,00 kr, Kontant → Spara → bekräftade gränsvärdesvarning ("Ja") → toast **"Kollektbeloppen sparade"**.
+2. Försökte attestera → **misslyckades** ("Användaren saknar attesträtt") – kontantraden förblev i status **E** (ej attesterad) genom hela testet, se öppen punkt i avsnitt 6.
+3. Gick via **Sök kollekttillfälle** (Kollekttyp=Församlingskollekt) → 1 träff → öppnade tillfället igen.
+4. Klickade grönt + **på just Strandkyrkan-radens ikon** → en ny tom rad för **samma kollektställe** dök upp direkt under, med tomt Belopp och `[Välj]` i Inbetalningsmetod.
+5. Fyllde i 300,25 kr, valde Swish 1 → Spara → gränsvärdesvarning → Ja → **"Kollektbeloppen sparade"**.
+6. **Verifierat**: den ursprungliga kontantraden (500,00 / Kontant) var oförändrad; den nya Swish-raden (300,25 / Swish 1) tillkom som en separat rad på samma kollektställe. Ingen data i kontantraden skrevs över.
+
+Detta bekräftar exakt handbokens beskrivning: *"Lägg till ytterligare belopp: Om man vill lägga till ett belopp där det redan finns ett registrerat, makulerat, attesterat eller utbetalt belopp klickar man på gröna pluset till höger på raden."*
+
+> **Öppen punkt:** Jag kunde inte verifiera beteendet när kontantraden verkligen har status **A** (attesterad) eftersom mitt testkonto saknar attesträtt i övningssystemet. Handboken säger uttryckligen att grön-plus-mekaniken fungerar oavsett status (registrerat/makulerat/attesterat/utbetalt), men den exakta visuella/DOM-skillnaden för en attesterad rad (t.ex. om beloppsfältet blir read-only) är **inte live-bekräftad**. Rekommendera att en människa med attesträtt kompletterar detta test innan scriptet driftsätts skarpt.
+
+### 1.4 Skapa nytt F-tillfälle (endast när sökningen ger 0 träffar) — fullt live-verifierat end-to-end
+
+URL: `GET /Collection/CollectionOccasion/Main` (tomt formulär, ID-fält `#ID` är hidden/tomt).
+
+**Grunduppgifter-fält:**
+
+| Etikett | Fälttyp | Selector | Möjliga värden / beteende |
+|---|---|---|---|
+| Tillfällesdatum | text+datepicker | `#OccasionDate` (name samma) | `ÅÅÅÅ-MM-DD` |
+| Kollekttyp | `<select>` | `#Type` (name samma) | `3`=Församlingskollekt (till egna verksamheten), `4`=Församlingskollekt (till extern kontakt), `5`=Församlingskollekt nationell organisation. **Endast dessa tre** finns i skapa-nytt-formuläret – Riks- och Stiftskollekt kan **inte** väljas här, vilket bekräftar att församlingen aldrig kan skapa R/S. |
+| Beslutat av | `<select>` | `#DecidedBy` (name samma) | Lista över församlingarna i det aktiva pastoratet (t.ex. "Harbo församling", "Östervåla församling") |
+| Kollektändamål | text (autocomplete-liknande, men fritext) | `#Purpose` (name samma) | Fritext. Vid typ "nationell organisation" blir detta istället en **read-only label** som fylls automatiskt av vald Mottagare/Öronmärkning (kan inte skrivas manuellt – bekräftat live) |
+| Kollektställe | `<select>` | `#CollectionLocationId` (name samma) | `[Alla]` eller specifikt kollektställe (t.ex. "Stenkyrkan", "Strandkyrkan") – lista beror på vilken församling som valts i Beslutat av |
+| Notering för egen uppföljning | textarea | `#Note` (name samma) | Fritext, enbart lokal uppföljning |
+| Spara | `<button>` | klass `.create_occasion` | Sparar utan klarmarkering |
+| Spara och klarmarkera | `<button>` | klass `.create_and_readymark_occasion` | Sparar + klarmarkerar i ett steg (kräver Mottagare valda + 100 %) |
+
+**Mottagare-sektionen beror på Kollekttyp (alla tre live-testade idag):**
+
+- **Till egna verksamheten** (`Type=3`): Mottagare fylls **automatiskt** av systemet med egen ekonomisk enhet (t.ex. "Östervåla-Harbo pastorat", 100 %) – bekräftat live, ingen manuell inmatning möjlig/nödvändig.
+- **Till extern kontakt** (`Type=4`): Ett sökfält `#input_search_mottagare` (`class="search_mottagare ui-autocomplete-input"`, **jQuery UI Autocomplete – kräver riktig tangentbordsinmatning**) + knapp `#collectionoccasion_contacts_add` ("Lägg till", inaktiv tills en kontakt är vald ur förslagslistan). Ett hopfällbart "Lägg till ny kontakt"-formulär finns också om mottagaren inte redan finns i kontaktregistret (fält: `#Name`, `#COAddress`, `#Address`, `#Zip`, `#City`, `#Country`, `#URL`, `#Note`, `#ForeignContact` m.fl. – ej djupdykt då detta inte behövs för Håvens Swish-flöde).
+- **Nationell organisation** (`Type=5`): Mottagare blir ett enkelt `<select>` (id ej fångat separat men hittad via `find`, options "Act Svenska kyrkan"/"Svenska kyrkan i utlandet"). Vid val visas ett extra fält **Öronmärkning** – en jQuery UI Autocomplete utan `id`/`name` (troligen kopplad till ett dolt companion-fält för valt id) med hjälptext-ikon bredvid (info-knapp `title`/tooltip som "översätter" ord till giltiga val, enligt handbok). Kollektändamål-fältet blir automatiskt = vald mottagare/öronmärkning (read-only).
+
+**Live-genomfört helt scenario (dokumenterat steg för steg):**
+1. Tillfällesdatum `2026-07-19`, Kollekttyp = "Församlingskollekt (till egna verksamheten)" → Mottagare auto-ifylld (Östervåla-Harbo pastorat, 100 %).
+2. Beslutat av = "Östervåla församling" → Kollektställe-listan uppdaterades till att visa "Stenkyrkan"/"Strandkyrkan" för den församlingen.
+3. Kollektändamål = fritext "Diakoni - test Håven", Kollektställe = "Stenkyrkan" (specifikt, ej "Alla"), Notering ifylld.
+4. Klick **Spara och klarmarkera** → toasts **"Kollekttillfället skapat."** och **"Kollekttillfället klarmarkerat."** i följd → sidan laddade om med `?collectionOccasionid=<nytt GUID>` och visade automatiskt Kollektbelopp-panelen med en rad (Stenkyrkan, tom).
+5. Fyllde Belopp `1500,75`, Inbetalningsmetod = Swish 1 → Spara → gränsvärdesvarning (beloppet var högre än gränsvärdet 500,00 för denna kombination) → Ja → **"Kollektbeloppen sparade."**
+
+Detta täcker fullständigt kravet "skapa → välj mottagare/ändamål/kollektställe → klarmarkera → registrera belopp med Swish".
+
+### 1.5 "Välj…"-menyn på ett öppnat F-tillfälle (live-verifierat)
+Knapp `#`-lös, textinnehåll "Välj…" högst upp till höger. På vårt egenskapade F-tillfälle innehöll dropdownen: **Nytt**, **Avklarmarkera**, **Kopiera**. (Bokföringsunderlag syns först när något är attesterat, enligt handbok – ej synligt här eftersom inget var attesterat.)
 
 ---
 
-## 2. Riks- och stiftskollekt (R/S) – endast komplettera belopp
+## 2. Riks- och Stiftskollekt (R/S)
 
-**Bekräftat i övningssystemet:** Rikskollekter finns registrerade för hela året (sökning på Kollekttyp=Rikskollekt gav 144 träffar från 2015 och framåt, inkl. framtida datum 2026). Församlingen/pastoratet har **ingen möjlighet** att skapa eller redigera grunduppgifter på ett R/S-tillfälle – fälten under "Grunduppgifter" (Tillfällesdatum, Kollekttyp, Beslutat av=Kyrkostyrelsen/stiftsstyrelse, Kollektändamål, Kollektställe) visas som statisk information, och **Välj...-menyn på ett R/S-tillfälle innehåller bara "Nytt"** (dvs. skapa ett nytt eget tillfälle) – ingen redigerings- eller borttagningsfunktion. Detta bekräftar regeln 1:1: userscriptet får aldrig skapa/redigera R/S, bara komplettera belopp.
+### 2.1 Live-fynd: R-tillfällen finns rikligt, S saknas helt
+- Sökning Kollekttyp=Rikskollekt gav **144 träffar**, från 2015-01-18 till minst 2026, återkommande ändamål: "Svenska kyrkan i utlandet", "Act Svenska kyrkan", "Svenska kyrkans unga", "Evangeliska Fosterlandsstiftelsen". Alla "Beslutat av: Kyrkostyrelsen".
+- Sökning Kollekttyp=Stiftskollekt gav **0 träffar** i övningssystemet. **Bekräftat: Stiftskollekt saknas i övningsmiljön.** Komplettera-flödet för S kunde därför inte live-testas på riktig data, men eftersom UI:t för R och S delar samma formulär/vy-struktur (samma sök-typ-lista, samma detaljvy-layout) förväntas S bete sig identiskt med R när/om ett S-tillfälle finns.
 
-### 2.1 Navigering
-- **Om tillfället redan syns i "ej registrerade belopp"-listan:** Meny **Kollekt → Kollektbelopp – registrera** → `GET /Collection/CollectionOccasionSearch/CollectionAmountReg` → tabell med kolumnerna Datum/Typ/Beslutat av/Kollektändamål → klick på rad → `GET /Collection/CollectionOccasion/Main?collectionOccasionid={GUID}`.
-- **Annars (belopp redan delvis registrerat, eller tillfället ligger utanför 60-dagarsfönstret):** Meny **Sök → Kollekttillfälle** → `GET /Collection/CollectionOccasionSearch/Search` med filter Kollekttyp=Rikskollekt/Stiftskollekt, valfritt Kollektändamål (fritext) och Tillfällesdatum-intervall → resultatlista → klick på rad → samma `CollectionOccasion/Main?collectionOccasionid=...`-vy. Sökformuläret postar som GET-querystring (`?Type=...&Purpose=...&ReadyMarked=...&OccasionDateFrom=...&OccasionDateTo=...`) – **deep-linkbart**, dvs. ett userscript skulle kunna hoppa direkt dit om GUID för Kollekttyp (Rikskollekt/Stiftskollekt) är kända (dessa är statiska system-GUID:er, se fältordlistan).
+### 2.2 Struktur på ett R-tillfälle (live-verifierat: 2026-07-12, "Svenska kyrkans unga")
+- **Grunduppgifter**: Beslutat av = "Kyrkostyrelsen", Klarmarkerad = redan satt (i vårt exempel `2026-02-05 av super` – dvs klarmarkerad av ett nationellt systemkonto långt innan vår registrering), Kollektställe = "Alla".
+- **Mottagare-panelen var tom** (inga rader) för Rikskollekt – till skillnad från F, där mottagare/procent visas explicit. Öronmärkning/mottagare för R/S tycks hanteras helt nationellt och exponeras inte som redigerbara fält lokalt.
+- **Kollektbelopp-panelen visar EN rad per kombination av församling × kollektställe för HELA pastoratet**, grupperat: t.ex. "Harbo församling / Stenkyrkan", "/ Strandkyrkan", "Östervåla församling / Stenkyrkan", "/ Strandkyrkan" — exakt så som handboken beskriver för "flera kyrkors belopp på samma tillfälle" / R-S-inmatning: ett tillfälle, alla församlingars belopp under.
 
-### 2.2 Kollektbelopp-tabellens struktur (flera kyrkor/församlingar på samma tillfälle)
-Detta är kärnan i R/S-flödet. På det kartlagda tillfället (Rikskollekt, "Svenska kyrkan i utlandet", 2026-05-24) visades EN tabell med rader för **båda församlingarna** i pastoratet och **båda kollektställena** i respektive församling:
+### 2.3 Komplettera-belopp-flödet på ett befintligt R-tillfälle — live-verifierat
+1. Sök kollekttillfälle → Kollekttyp = Rikskollekt → 144 träffar → använde det inbyggda **Filtrera**-fältet (klientside) för att hitta `2026-07-12` → öppnade raden "Svenska kyrkans unga".
+2. Fyllde i Belopp `875,00` på raden "Harbo församling / Stenkyrkan", Inbetalningsmetod = Swish 1.
+3. Spara → samma gränsvärdesvarning (500,00) → Ja → **"Kollektbeloppen sparade."**
+4. Detta fungerade **trots att tillfället klarmarkerades av ett nationellt konto** och utan att vi rörde klarmarkeringsstatus – exakt i linje med handbokens uppgift: *"Det går att registrera och attestera belopp även om en riks- eller stiftskollekt inte är klarmarkerad."*
 
-```
-Harbo församling     – Stenkyrkan
-                      – Strandkyrkan
-Östervåla församling  – Stenkyrkan
-                      – Strandkyrkan
-```
+### 2.4 "Välj…"-menyn på ett R-tillfälle (live-verifierat, viktig skillnad mot F)
+Endast **ett** alternativ: **Nytt** (dvs genväg till skapa-nytt-formuläret för egna F-tillfällen). **Ingen Avklarmarkera, ingen Kopiera** var tillgänglig – till skillnad från vårt egna F-tillfälle som hade båda. Detta bekräftar tekniskt (inte bara via handbokstext) att en pastorats-/församlingsanvändare **inte har någon redigeringsrätt** över R/S-tillfällets grunduppgifter – endast rätt att lägga till belopp på befintliga rader.
 
-Samma fält/selektorer som i avsnitt 1.4 (Belopp, Nr kollektbok, Inbetalningsmetod, Kollekt ej upptagen, lägg-till-rad-ikon). Radernas identitet avgörs **enbart av text i cellerna** "Församling"/"Kollektställe" – inga unika id/GUID i DOM.
-
-**Bekräftat live:** Registrerade 123,45 kr (Swish 1) på Harbo/Stenkyrkan och 50 000,00 kr (Swish 1) på Östervåla/Stenkyrkan i samma spardialog – båda sparades i en och samma POST (en klick på **Spara** sparar alla ifyllda rader i tabellen, oavsett församling). Gränsvärdesvarningen ("Ja"/"Nej") triggades korrekt på det för höga beloppet, och efter "Ja" sparades båda raderna (grön toast "Kollektbeloppen sparade", båda raderna fick E-badge).
-
-### 2.3 "Lägg till rad" för flera inbetalningsmetoder på samma kollektställe
-Samma mekanik som i 1.4: klick på den gröna +-ikonen i en rads sista kolumn lägger till en ny tom Belopp/Inbetalningsmetod-rad för **samma** Församling/Kollektställe (t.ex. om samma kollekt kom in både kontant och via Swish). Bekräftat live.
-
-### 2.4 Klarmarkering – ej relevant för scriptet
-R/S-tillfällen visades redan klarmarkerade ("Klarmarkerad: 2026-02-05 av super") av den nationella nivån. Handboken och UI:t bekräftar att belopp går att registrera/attestera även om ett R/S-tillfälle INTE är klarmarkerat – scriptet ska aldrig försöka klarmarkera ett R/S-tillfälle och har (bekräftat) ingen knapp för det heller på dessa tillfällen.
+> **[INKLISTRINGEN KAPADES HÄR]** - den nya körningens svans (resten av 2.4 samt avsnitt 3 Insamling/gåva, fältordlista, rekommendation och öppna punkter) kom inte med. Sista ofullständiga meningen löd: *"→ Krav för userscriptet (bekräftat i UI:t): skapa-nytt-formuläret för Kollekttillfälle exponerar överhuvudtaget inte Rikskollekt/Stiftskollekt som valbara typer. Scriptet kan alltså aldrig av misstag skapa ett R/S-tillfälle via detta formulär ... Scriptet bör ändå explicit blockera/varna om R/S..."*
+>
+> Avsnitten nedan är **BILAGA från föregående (mindre detaljerade) pass** och ersätts när svansen klistras in. GUID:er och DataTables-detaljer i den nya körningen ovan gäller framför bilagan vid konflikt.
 
 ---
 
+<!-- ================= BILAGA: FÖREGÅENDE PASS (ersätts av nya körningens svans) ================= -->
+
+</content>
 ## 3. Insamling/gåva – månadssumma (per verksamhet)
 
 ### 3.1 Navigering
