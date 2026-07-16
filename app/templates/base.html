@@ -6,6 +6,13 @@
   <title>{% block titel %}Håven{% endblock %} - kollektverktyg</title>
   <link rel="stylesheet" href="/static/pico.min.css">
   <link rel="stylesheet" href="/static/tokens.css">
+  <script>
+    // Applicera sparat tema fore render sa det inte blinkar (auto = inget attribut).
+    (function () {
+      var t = localStorage.getItem("hv-theme");
+      if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 </head>
 <body>
   <header class="hv-top">
@@ -26,6 +33,7 @@
         {{ navlank("/justeringar", "Justeringar", p) }}
         {{ navlank("/omatchade", "Omatchade", p) }}
         {{ navlank("/konfig", "Konfig", p) }}
+        <button id="temavaljare" class="tema-btn" type="button" aria-label="Växla tema"></button>
       </nav>
     </div>
   </header>
@@ -33,5 +41,6 @@
     {% block content %}{% endblock %}
   </main>
   <script src="/static/app.js"></script>
+  <script src="/static/theme.js"></script>
 </body>
 </html>

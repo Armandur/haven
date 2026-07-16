@@ -26,16 +26,31 @@
   --pico-primary-underline: rgba(31, 111, 107, 0.5);
 }
 
+/* Morka statusfarger nar effektiva temat ar morkt (auto-dark ELLER tvingat dark) */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
+  :root:not([data-theme="light"]) {
     --hv-ok-bg: #16351f;
     --hv-varning-bg: #3a2a10;
     --hv-vantar-bg: #23282f;
     --hv-vantar: #9aa4b2;
   }
 }
+:root[data-theme="dark"] {
+  --hv-ok-bg: #16351f;
+  --hv-varning-bg: #3a2a10;
+  --hv-vantar-bg: #23282f;
+  --hv-vantar: #9aa4b2;
+}
 
 body { padding-block: 0; }
+
+/* Temavaljare i headern */
+.tema-btn {
+  background: none; border: none; color: inherit; cursor: pointer;
+  padding: 0.15rem; margin-left: 0.9rem; line-height: 0; opacity: 0.9;
+  display: inline-flex; align-items: center;
+}
+.tema-btn:hover { opacity: 1; }
 
 header.hv-top {
   background: var(--hv-accent);
@@ -99,7 +114,7 @@ p.hv-badge { white-space: normal; }
   --hv-typ-gava: #1558b0; --hv-typ-gava-bg: #e7f0fb;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
+  :root:not([data-theme="light"]) {
     --hv-typ-f: #7ecb8a;   --hv-typ-f-bg: #16351f;
     --hv-typ-s: #e2c65a;   --hv-typ-s-bg: #38300f;
     --hv-typ-r: #f0938c;   --hv-typ-r-bg: #3a1614;
