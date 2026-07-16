@@ -39,6 +39,7 @@ app/
   templates/ static/   # Jinja2 + Pico CSS + tokens.css
   main.py              # app, lifespan, router-registrering
 cli.py                 # CLI för validering mot en rapport
+userscript/            # KOB-förifyllnad (Tampermonkey), läser /ko/export.json
 tests/                 # facit-test mot maj 2026
 data/                  # in-filer (gitignorat, givarmeddelanden = personuppgifter)
 ```
