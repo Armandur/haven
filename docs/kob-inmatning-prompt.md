@@ -38,6 +38,15 @@ skärmdumpar av formulären och en innehållsförteckning (avsnitt som
 "Kollekttillfälle", "Kollektbelopp", "Insamling/gåva"). Använd den som facit för
 hur flödet är tänkt att fungera, och jämför mot vad du faktiskt ser i KOB:s UI.
 
+**Om en tidigare kartläggning finns:** en första spec (`KOB-INMATNING.md`) är
+redan gjord för de flesta flödena. Om jag klistrar in den: bygg vidare på den och
+**fokusera denna körning på det som inte kunde live-verifieras tidigare** -
+särskilt **församlingskollekt-flödet**: Sök kollekttillfälle (formulär +
+resultatlista + selektorer), komplettera ett befintligt tillfälle, och att lägga
+till ett **Swish-belopp på ett kollektställe där kontantbeloppet redan är
+registrerat/attesterat** (via gröna +, utan att röra kontantraden). Leverera en
+uppdaterad, komplett spec.
+
 **Miljö: detta är KOB:s övningssystem** - du får skapa, fylla i, spara,
 klarmarkera och attestera fritt för att fullt kartlägga flödet, med riktiga
 klick och riktig inmatning (inga skarpa data påverkas). Utforska hela vägen, men
@@ -119,10 +128,27 @@ Detta är redan känt; din uppgift är att fånga selektorerna och bekräfta/kor
 ### Detta ska du dokumentera för VARJE posttyp (F, R/S, insamling månadssumma, särskild post, per-ändamål)
 1. **Navigering:** exakt klickstig och resulterande URL:er (och om URL:en är
    parametriserbar/deeplink-bar till rätt inmatningsvy).
-2. **Komplettera vs. skapa:** exakt hur man i UI:t når "komplettera belopp på
-   befintligt tillfälle" (Sök kollekttillfälle / listan över ej registrerade
-   belopp) kontra "skapa nytt tillfälle". För R/S: bekräfta att tillfällena redan
-   finns och att man bara kompletterar - userscriptet får ALDRIG skapa R/S.
+2. **Komplettera vs. skapa (viktigast för F - dokumentera noggrant):**
+   Normalfallet för församlingskollekt är att **komplettera ett befintligt
+   tillfälle**, inte skapa nytt - vi registrerar Swish-beloppen månaden efter, då
+   tillfället oftast redan finns (en kollega har ofta redan skapat/klarmarkerat det
+   och registrerat kontantbeloppet). Kartlägg därför **Sök kollekttillfälle** i
+   detalj:
+   - **Sökformuläret:** fält och selektorer (Kollekttyp, Kollektändamål,
+     tillfällesdatum-intervall, klarmarkerad m.m.) och om URL:en är deep-linkbar
+     (querystring-parametrar).
+   - **Resultatlistan:** kolumner, hur ett tillfälle **identifieras** (datum/typ/
+     beslutat av/ändamål) och **öppnas** (selektor för raden/länken), och om **flera
+     träffar** kan förekomma på samma datum/ändamål.
+   - **Komplettera-flödet från en träff:** öppna tillfället, hitta rätt
+     kollektställe-rad, och lägg till en **Swish-rad** via gröna + (utan att röra en
+     ev. redan registrerad/attesterad kontantrad - se F-testet i Miljö-avsnittet).
+   - **Skapa-vägen** (när sökningen är tom) och att den bara används då.
+   Beslutslogik som scriptet ska följa (dokumentera att UI:t stödjer den): 1 träff
+   -> komplettera, 0 träffar -> skapa nytt, **flera/tvetydigt -> fråga användaren**
+   vilket tillfälle (gissa aldrig).
+   För **R/S**: bekräfta att tillfällena redan finns och att man bara kompletterar -
+   userscriptet får ALDRIG skapa R/S.
 3. **Fältlista** för varje formulär, med:
    - Etikett (svensk UI-text), fälttyp (text/select/datum/radio/checkbox/autocomplete).
    - **Robust selektor** (helst `id`, annars `name`, annars stabil CSS/XPath). Notera
