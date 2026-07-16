@@ -87,7 +87,7 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Fas 3 - bekvämlighet
 
-- [ ] **KOB-handboken (PDF, 76 s) -> HTML-dokumentation.** `KOB handbok.pdf`
+- [x] **KOB-handboken (PDF, 76 s) -> HTML-dokumentation.** (klar, docs/kob-handbok.html) `KOB handbok.pdf`
   (i vmworkspace) är textbaserad med skärmdumpar av formulären. Omarbeta till
   `docs/kob-handbok.html` (text sida-för-sida + inline-skärmdumpar + TOC), som
   fältmappnings-referens för Fas 3 (kompletterar Claude-for-Chrome-prompten).
