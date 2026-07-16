@@ -6,7 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 from app.config import (
     DATA_DIR,
@@ -118,6 +118,19 @@ def arbetsko(request: Request):
 def ko_export(request: Request):
     vy = _vy(request)
     return JSONResponse(bygg_export(vy.resultat))
+
+
+_USERSCRIPT_FIL = Path(__file__).resolve().parents[2] / "userscript" / "haven-kob.user.js"
+
+
+@router.get("/kob-userscript.user.js")
+def kob_userscript():
+    """Serverar KOB-userscriptet. .user.js-suffixet gör att Tampermonkey/
+    Violentmonkey fångar navigeringen och erbjuder installation direkt."""
+    if not _USERSCRIPT_FIL.exists():
+        raise HTTPException(status_code=404, detail="Userscriptet saknas.")
+    return FileResponse(_USERSCRIPT_FIL, media_type="text/javascript",
+                        filename="haven-kob.user.js", content_disposition_type="inline")
 
 
 @router.post("/ko/bekrafta")
