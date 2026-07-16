@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.4.0
+// @version      0.5.0
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
+// @updateURL    http://ubuntu-ai:8003/kob-userscript.user.js
+// @downloadURL  http://ubuntu-ai:8003/kob-userscript.user.js
 // @match        http://kob-utb.svenskakyrkan.se/*
 // @match        https://kob-utb.svenskakyrkan.se/*
 // SKARP DRIFT: avkommentera raden nedan och sätt din EXAKTA skarpa KOB-host
@@ -35,6 +37,7 @@
   // ---------------------------------------------------------------------------
   // Konstanter
   // ---------------------------------------------------------------------------
+  const SCRIPT_VERSION = '0.5.0';   // håll i synk med @version
   const STATE_KEY = 'haven_kob_state';
   const HAVEN_URL_KEY = 'haven_export_url';
   const HAVEN_URL_DEFAULT = 'http://ubuntu-ai:8003/ko/export.json';
@@ -429,6 +432,19 @@
     loggEl = document.createElement('div');
     loggEl.id = 'haven-kob-logg';
     kropp.appendChild(loggEl);
+
+    // Version + uppdatera-länk (öppnar downloadURL:en → managern visar update-prompt).
+    const foot = document.createElement('div');
+    foot.style.cssText = 'margin-top:8px;font-size:11px;color:#888;display:flex;justify-content:space-between';
+    const ver = document.createElement('span');
+    ver.textContent = 'v' + SCRIPT_VERSION;
+    const upp = document.createElement('a');
+    try { upp.href = new URL('/kob-userscript.user.js', havenUrl()).href; } catch (e) { upp.href = HAVEN_URL_DEFAULT.replace(/\/ko\/export\.json.*/, '/kob-userscript.user.js'); }
+    upp.textContent = 'Uppdatera script';
+    upp.title = 'Öppnar scriptet i din userscript-manager; finns nyare version erbjuds uppdatering.';
+    foot.appendChild(ver);
+    foot.appendChild(upp);
+    kropp.appendChild(foot);
 
     // Behåll utfällt läge över KOB:s sidladdningar (persistent val).
     if (pref('open', false)) panelEl.classList.add('open');
