@@ -27,6 +27,7 @@ from app.database import (
     ta_bort_overstyrning,
     ta_bort_sarskild,
 )
+from app.core.regler import Overstyrning, SarskildPost
 from app.services.konfig_service import ladda_konfig_till_minne
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
@@ -207,8 +208,21 @@ def justeringar(request: Request):
         "avst": resultat, "sar_effekt": sar_effekt,
         "ov_forsamling": ov_forsamling, "sar_verksamhet": sar_verksamhet,
         "ov_rader": ov_rader, "sar_rader": sar_rader,
-        "historik": las_historik(period),
+        "historik": [(h, _historik_berorda(h, txs)) for h in las_historik(period)],
     })
+
+
+def _historik_berorda(h, transaktioner: list):
+    """Slar upp vilka transaktioner en historikpost gallde (tx_ids eller filter)."""
+    if h.typ == "overstyrning":
+        regel = Overstyrning(id=0, period=h.period, forsamling=h.scope, ny_andamal="",
+                             tx_ids=h.tx_ids, meddelande_filter=h.meddelande_filter,
+                             datum_fran=h.datum_fran, datum_till=h.datum_till)
+    else:
+        regel = SarskildPost(id=0, period=h.period, verksamhet=h.scope, namn="",
+                             tx_ids=h.tx_ids, meddelande_filter=h.meddelande_filter,
+                             datum_fran=h.datum_fran, datum_till=h.datum_till)
+    return [t for t in transaktioner if regel.traffar(t)]
 
 
 def _redir_justeringar(request: Request):

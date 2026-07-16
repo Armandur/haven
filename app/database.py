@@ -127,6 +127,12 @@ class RegelhistorikRad(Base):
     handelse: Mapped[str] = mapped_column(String)     # "skapad" | "borttagen"
     beskrivning: Mapped[str] = mapped_column(String, default="")
     av_vem: Mapped[str] = mapped_column(String, default="")
+    # Urvalet vid handelsen, sa berorda rader kan losas upp aven for borttagna regler:
+    scope: Mapped[str] = mapped_column(String, default="")   # forsamling | verksamhet
+    tx_ids: Mapped[str] = mapped_column(String, default="")
+    meddelande_filter: Mapped[str] = mapped_column(String, default="")
+    datum_fran: Mapped[str] = mapped_column(String, default="")
+    datum_till: Mapped[str] = mapped_column(String, default="")
 
 
 class RapportRad(Base):
@@ -174,6 +180,11 @@ def _migrera() -> None:
     tillagg = {
         "overstyrning": [("tx_ids", "TEXT DEFAULT ''")],
         "sarskild_post": [("tx_ids", "TEXT DEFAULT ''")],
+        "regelhistorik": [
+            ("scope", "TEXT DEFAULT ''"), ("tx_ids", "TEXT DEFAULT ''"),
+            ("meddelande_filter", "TEXT DEFAULT ''"),
+            ("datum_fran", "TEXT DEFAULT ''"), ("datum_till", "TEXT DEFAULT ''"),
+        ],
     }
     with engine.begin() as conn:
         for tabell, kolumner in tillagg.items():
@@ -248,7 +259,9 @@ def skapa_overstyrning(period: str, forsamling: str, ny_andamal: str,
         s.commit()
     urval = _beskriv_urval(tx_ids, meddelande_filter, datum_fran, datum_till)
     _logga(period, "overstyrning", "skapad",
-           f"{forsamling or '—'} → {ny_andamal} ({urval})", av_vem)
+           f"{forsamling or '—'} → {ny_andamal} ({urval})", av_vem,
+           scope=forsamling, tx_ids=",".join(tx_ids or []),
+           meddelande_filter=meddelande_filter, datum_fran=datum_fran, datum_till=datum_till)
 
 
 def ta_bort_overstyrning(id: int) -> None:
@@ -260,9 +273,12 @@ def ta_bort_overstyrning(id: int) -> None:
         urval = _beskriv_urval(_ptxids(rad.tx_ids), rad.meddelande_filter,
                                rad.datum_fran, rad.datum_till)
         beskrivning = f"{rad.forsamling or '—'} → {rad.ny_andamal} ({urval})"
+        scope, tx_ids = rad.forsamling, rad.tx_ids
+        mfilter, dfran, dtill = rad.meddelande_filter, rad.datum_fran, rad.datum_till
         s.delete(rad)
         s.commit()
-    _logga(period, "overstyrning", "borttagen", beskrivning)
+    _logga(period, "overstyrning", "borttagen", beskrivning, scope=scope, tx_ids=tx_ids,
+           meddelande_filter=mfilter, datum_fran=dfran, datum_till=dtill)
 
 
 # --- Sarskilda poster -------------------------------------------------------
@@ -296,7 +312,9 @@ def skapa_sarskild(period: str, verksamhet: str, namn: str, oronmarkning: str = 
         ))
         s.commit()
     urval = _beskriv_urval(tx_ids, meddelande_filter, datum_fran, datum_till)
-    _logga(period, "sarskild", "skapad", f"{verksamhet} / {namn} ({urval})", av_vem)
+    _logga(period, "sarskild", "skapad", f"{verksamhet} / {namn} ({urval})", av_vem,
+           scope=verksamhet, tx_ids=",".join(tx_ids or []),
+           meddelande_filter=meddelande_filter, datum_fran=datum_fran, datum_till=datum_till)
 
 
 def ta_bort_sarskild(id: int) -> None:
@@ -308,9 +326,12 @@ def ta_bort_sarskild(id: int) -> None:
         urval = _beskriv_urval(_ptxids(rad.tx_ids), rad.meddelande_filter,
                                rad.datum_fran, rad.datum_till)
         beskrivning = f"{rad.verksamhet} / {rad.namn} ({urval})"
+        scope, tx_ids = rad.verksamhet, rad.tx_ids
+        mfilter, dfran, dtill = rad.meddelande_filter, rad.datum_fran, rad.datum_till
         s.delete(rad)
         s.commit()
-    _logga(period, "sarskild", "borttagen", beskrivning)
+    _logga(period, "sarskild", "borttagen", beskrivning, scope=scope, tx_ids=tx_ids,
+           meddelande_filter=mfilter, datum_fran=dfran, datum_till=dtill)
 
 
 # --- Rapportregister --------------------------------------------------------
@@ -376,17 +397,27 @@ def rapport_andrad(filnamn: str) -> bool:
 @dataclass
 class Historikpost:
     tidpunkt: str
+    period: str
     typ: str
     handelse: str
     beskrivning: str
     av_vem: str
+    scope: str = ""
+    tx_ids: frozenset[str] | None = None
+    meddelande_filter: str | None = None
+    datum_fran: date | None = None
+    datum_till: date | None = None
 
 
-def _logga(period: str, typ: str, handelse: str, beskrivning: str, av_vem: str = "") -> None:
+def _logga(period: str, typ: str, handelse: str, beskrivning: str, av_vem: str = "",
+           scope: str = "", tx_ids: str = "", meddelande_filter: str = "",
+           datum_fran: str = "", datum_till: str = "") -> None:
     with Session(engine) as s:
         s.add(RegelhistorikRad(
             tidpunkt=_now(), period=period, typ=typ, handelse=handelse,
-            beskrivning=beskrivning, av_vem=av_vem))
+            beskrivning=beskrivning, av_vem=av_vem, scope=scope, tx_ids=tx_ids,
+            meddelande_filter=meddelande_filter, datum_fran=datum_fran,
+            datum_till=datum_till))
         s.commit()
 
 
@@ -447,7 +478,10 @@ def las_historik(period: str, limit: int = 50) -> list[Historikpost]:
             .order_by(RegelhistorikRad.id.desc()).limit(limit)
         ).all()
         return [
-            Historikpost(tidpunkt=r.tidpunkt, typ=r.typ, handelse=r.handelse,
-                         beskrivning=r.beskrivning, av_vem=r.av_vem)
+            Historikpost(
+                tidpunkt=r.tidpunkt, period=r.period, typ=r.typ, handelse=r.handelse,
+                beskrivning=r.beskrivning, av_vem=r.av_vem, scope=r.scope or "",
+                tx_ids=_ptxids(r.tx_ids), meddelande_filter=r.meddelande_filter or None,
+                datum_fran=_pdate(r.datum_fran), datum_till=_pdate(r.datum_till))
             for r in rader
         ]

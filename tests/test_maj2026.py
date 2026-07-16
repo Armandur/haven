@@ -284,3 +284,27 @@ def test_konfig_db_och_normalize(tmp_path, monkeypatch):
         assert m is not None and m.verksamhet == "Musik"
     finally:
         normalize.satt_konfig(FORSAMLINGAR, MOTTAGARE)   # aterstall for ovriga tester
+
+
+def test_historik_berorda_rader(tmp_path, monkeypatch):
+    """Historik sparar urvalet sa berorda rader kan losas upp mot rapporten."""
+    from sqlalchemy import create_engine
+    from app.core.pipeline import kor_pipeline
+    from app.core.regler import SarskildPost
+    import app.database as db
+    eng = create_engine(f"sqlite:///{tmp_path / 't.db'}", future=True)
+    monkeypatch.setattr(db, "engine", eng)
+    db.Base.metadata.create_all(eng)
+
+    db.skapa_sarskild("2026-05", "ACT Svenska Kyrkan", "Ljuständning",
+                      meddelande_filter="ljus")
+    h = db.las_historik("2026-05")[0]
+    assert h.scope == "ACT Svenska Kyrkan"
+    assert h.meddelande_filter == "ljus"
+
+    res = kor_pipeline(SWISH)
+    regel = SarskildPost(id=0, period="2026-05", verksamhet=h.scope, namn="",
+                         tx_ids=h.tx_ids, meddelande_filter=h.meddelande_filter,
+                         datum_fran=h.datum_fran, datum_till=h.datum_till)
+    rader = [t for t in res.rapport.transaktioner if regel.traffar(t)]
+    assert len(rader) == 4        # fyra "ljus"-rader pa ACT

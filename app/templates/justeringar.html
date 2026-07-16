@@ -196,12 +196,33 @@ som ska brytas ut ur månadssumman och registreras separat.</p>
 <figure><table>
   <thead><tr><th>Tidpunkt</th><th>Typ</th><th>Händelse</th><th>Beskrivning</th></tr></thead>
   <tbody>
-    {% for h in historik %}
+    {% for h, rader in historik %}
     <tr>
       <td class="hv-swish">{{ h.tidpunkt|replace('T', ' ') }}</td>
       <td>{% if h.typ == 'overstyrning' %}Överstyrning{% else %}Särskild post{% endif %}</td>
       <td>{% if h.handelse == 'skapad' %}<span class="hv-badge klar">skapad</span>{% else %}<span class="hv-badge varning">borttagen</span>{% endif %}</td>
-      <td>{{ h.beskrivning }}</td>
+      <td>
+        {{ h.beskrivning }}
+        {% if rader %}
+        <details class="hv-tx">
+          <summary>Visa {{ rader|length }} berörd{{ '' if rader|length == 1 else 'a' }} rad{{ '' if rader|length == 1 else 'er' }}</summary>
+          <table>
+            <thead><tr><th>Datum</th><th>Tid</th><th>Mottagare</th><th style="text-align:right">Belopp</th><th>Meddelande</th></tr></thead>
+            <tbody>
+              {% for t in rader|sort(attribute='trans_datum,tid') %}
+              <tr>
+                <td>{{ t.trans_datum }}</td>
+                <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
+                <td>{{ t.mottagarnamn }}</td>
+                <td style="text-align:right">{{ t.belopp|kr }}</td>
+                <td class="hv-swish">{{ t.meddelande }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+        {% else %}<span class="hv-swish">(inga rader kunde lösas upp mot aktuell rapport)</span>{% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>

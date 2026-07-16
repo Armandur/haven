@@ -4,14 +4,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
-- [ ] **Fäll ut berörda rader i historiken.** Varje historikpost på `/justeringar`
-  ska kunna expanderas för att visa exakt vilka transaktionsrader ändringen gällde
-  (datum, belopp, meddelande). Kräver att `regelhistorik` sparar urvalet (tx_ids
-  resp. filter) vid händelsen - idag lagras bara beskrivningstexten - plus en
-  resolver som slår tx_ids mot periodens rapport (finns i vyns kontext) och en
-  `<details>`-utfällning. Fungerar även för borttagna regler eftersom urvalet
-  loggas separat. Måttlig insats (kolumn + migration + loggning + UI). Värde:
-  stärker spårbarheten (spec 9), men lägre brådska i enanvändarläge.
+- [x] **Fäll ut berörda rader i historiken.** (klar) Varje historikpost på
+  `/justeringar` kan expanderas och visa exakt vilka transaktionsrader ändringen
+  gällde. `regelhistorik` sparar urvalet (tx_ids/filter/scope) vid händelsen och
+  routen löser upp dem mot periodens rapport med samma matchningslogik som
+  reglerna. Fungerar även för borttagna regler.
 
 - [x] **Fäll ut transaktioner per post i arbetskön.** (klar) Varje kopost ska kunna
   expanderas för att visa de underliggande Swish-transaktionerna (datum, tid,
