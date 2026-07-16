@@ -4,6 +4,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
+- [ ] **Filter "visa bara diffar" på /avstamning.** En toggle som döljer rena
+  rader/församlingar utan diff, så man snabbt går till det som behöver åtgärdas.
+  JS-toggle (progressivt, allt visas utan JS); märk rader `data-diff` och göm de
+  utan. Gäller både kollekt- och gåvatabellen. Liten insats.
+
 - [x] **Visa ändamålskalendern** (`/kalender`) - läsvy per församling; ny kalender
   för nytt år laddas upp via kalender-slotten på översikten. (klar)
 - [x] **Filuppladdning i webben.** (klar) Uppladdning på översikten av Swish-rapport,
