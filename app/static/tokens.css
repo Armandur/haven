@@ -72,7 +72,7 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 }
 .hv-post.hv-aktuell { border-left-color: var(--hv-accent); box-shadow: 0 0 0 2px var(--pico-primary-focus); }
 .hv-post.hv-klar { border-left-color: var(--hv-ok); opacity: 0.75; }
-.hv-post header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin: 0; }
+.hv-post header { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem 1rem; margin: 0; flex-wrap: wrap; }
 .hv-post .hv-belopp { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hv-post .hv-meta { color: var(--pico-muted-color); font-size: 0.85rem; }
 .hv-post table { margin: 0.5rem 0 0; font-size: 0.9rem; }
@@ -146,6 +146,7 @@ p.hv-badge { white-space: normal; }
   font-size: 1.05rem; margin: 1.3rem 0 0.6rem; padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--pico-muted-border-color);
 }
+.hv-forts { font-size: 0.8rem; font-weight: 400; color: var(--pico-muted-color); }
 
 /* Break-in-kort for riks-/stiftskollekter */
 .hv-post.hv-breakin { margin-left: 0.75rem; border-left-width: 5px; background: var(--pico-card-sectioning-background-color); }

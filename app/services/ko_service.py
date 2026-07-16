@@ -138,6 +138,7 @@ class Sekvenspost:
     typ: str                         # "rubrik" | "post" | "rs"
     forsamling: str | None = None
     post: Kopost | None = None
+    forts: bool = False              # rubrik aterupprepad efter en break-in
 
 
 def bygg_kollekt_sekvens(poster: list[Kopost]) -> list[Sekvenspost]:
@@ -167,14 +168,16 @@ def bygg_kollekt_sekvens(poster: list[Kopost]) -> list[Sekvenspost]:
     rs_i = 0
     for fors, fposts in per_fors.items():
         rubrik_satt = False
+        forsta_rubrik = True
         for post in fposts:
             while rs_i < len(rs_poster) and rs_poster[rs_i].datum <= post.datum:
                 sekvens.append(Sekvenspost("rs", post=rs_poster[rs_i]))
                 rs_i += 1
                 rubrik_satt = False
             if not rubrik_satt:
-                sekvens.append(Sekvenspost("rubrik", forsamling=fors))
+                sekvens.append(Sekvenspost("rubrik", forsamling=fors, forts=not forsta_rubrik))
                 rubrik_satt = True
+                forsta_rubrik = False
             sekvens.append(Sekvenspost("post", post=post))
     while rs_i < len(rs_poster):
         sekvens.append(Sekvenspost("rs", post=rs_poster[rs_i]))

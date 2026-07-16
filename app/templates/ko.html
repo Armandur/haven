@@ -111,7 +111,7 @@
     {% if not vy.kollekt_sekvens %}<p class="hv-tomt">Inga kollekter.</p>{% endif %}
     {% for s in vy.kollekt_sekvens %}
       {% if s.typ == 'rubrik' %}
-        <h2 class="hv-forsrubrik">{{ s.forsamling }}</h2>
+        <h2 class="hv-forsrubrik">{{ s.forsamling }}{% if s.forts %} <span class="hv-forts">(forts.)</span>{% endif %}</h2>
       {% elif s.typ == 'rs' %}
         {{ kort(s.post, nasta, rap.period, breakin=true) }}
       {% else %}
