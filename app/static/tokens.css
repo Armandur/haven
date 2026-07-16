@@ -222,3 +222,6 @@ p.hv-badge { white-space: normal; }
 .hv-swish { font-size: 0.8rem; color: var(--pico-muted-color); }
 .hv-tomt { color: var(--pico-muted-color); font-style: italic; }
 [hidden] { display: none !important; }
+
+.hv-baradiff { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-weight: 600; }
+.hv-baradiff input { margin: 0; }

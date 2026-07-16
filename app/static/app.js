@@ -159,3 +159,20 @@
     document.querySelectorAll(".hv-radfilter").forEach(initBox);
   });
 })();
+
+// Avstämning: "Visa bara diffar" - döljer rena församlingskort och rader utan diff.
+(function () {
+  "use strict";
+  var cb = document.getElementById("bara-diff");
+  if (!cb) return;
+  function applicera() {
+    var on = cb.checked;
+    document.querySelectorAll(".hv-avst-fors[data-hardiff]").forEach(function (a) {
+      a.hidden = on && a.dataset.hardiff !== "true";
+    });
+    document.querySelectorAll("tr[data-diff]").forEach(function (tr) {
+      tr.hidden = on && tr.dataset.diff !== "true";
+    });
+  }
+  cb.addEventListener("change", applicera);
+})();

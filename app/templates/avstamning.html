@@ -22,8 +22,11 @@
     <strong style="font-size:1.3rem;" class="{% if avst.kollekt.antal_diffar %}hv-badge varning{% endif %}">{{ avst.kollekt.antal_diffar }}</strong></div>
 </div>
 
+<label class="hv-baradiff"><input type="checkbox" id="bara-diff"> Visa bara diffar</label>
+
 {% for f in avst.kollekt.forsamlingar %}
-<article class="hv-post {% if f.har_diff %}{% else %}hv-klar{% endif %}">
+<article class="hv-post hv-avst-fors {% if f.har_diff %}{% else %}hv-klar{% endif %}"
+         data-hardiff="{{ 'true' if f.har_diff else 'false' }}">
   <header>
     <div>
       <strong>{{ f.forsamling }}</strong>
@@ -40,7 +43,7 @@
     </tr></thead>
     <tbody>
       {% for r in f.rader %}
-      <tr>
+      <tr data-diff="{{ 'true' if r.status == 'diff' else 'false' }}">
         <td>{{ r.datum or "-" }}</td>
         <td>{% if r.kollekttyp %}<span class="hv-badge typ-{{ r.kollekttyp|lower }}">{{ r.kollekttyp }}</span>{% endif %}</td>
         <td class="hv-meta">
@@ -73,7 +76,7 @@
   </tr></thead>
   <tbody>
     {% for r in avst.gava.rader %}
-    <tr>
+    <tr data-diff="{{ 'true' if r.status != 'ok' else 'false' }}">
       <td>{{ r.verksamhet }}
         {% if r.kob_detaljer %}<br><span class="hv-swish">{% for d in r.kob_detaljer %}{{ d.beskrivning }} ({{ d.belopp|kr }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
       </td>
