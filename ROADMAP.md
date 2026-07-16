@@ -110,4 +110,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   behöver Rasmus test mot övning/skarp. Kvarstår: R/S-komplettering,
   insamling/gåva, skapa-vy-förifyllnad, attest-DOM (PIN-modal/makulera, §11),
   skarpt system-prefix/host, per-ändamål-mottagare (spec 8).
+  - [ ] **Auto-uppdatering av scriptet.** Lägg `@updateURL`/`@downloadURL` →
+    `http://ubuntu-ai:8003/kob-userscript.user.js` så Tampermonkey/Violentmonkey
+    själv upptäcker ny `@version` och uppdaterar (schemalagt + manuell "sök efter
+    uppdateringar"). Ev. även en "Uppdatera script"-länk i panelen som öppnar
+    downloadURL:en (manager visar update-prompten från valfri KOB-sida). En helt
+    tyst självuppdatering från panelen går INTE - managern måste göra installet
+    (avsiktligt, säkerhet). Liten insats, hög nytta.
 - Arkivering av gammalt underlag.
