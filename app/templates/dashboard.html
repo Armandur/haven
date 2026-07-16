@@ -3,6 +3,24 @@
 {% block content %}
 <h1>Översikt</h1>
 
+<article>
+  <header><strong>Importera filer</strong></header>
+  <p class="hv-meta">Ladda upp månadens filer. Varje fil valideras och sparas för sig -
+  en misslyckad fil förkastar inte de andra. KOB-export och kalender ersätter den
+  befintliga; Swish-rapporter läggs till per månad.</p>
+  <form id="import-form" method="post" action="/import" enctype="multipart/form-data">
+    <div class="grid">
+      <label>Swish-rapport (.xlsx)<input type="file" name="swish" accept=".xlsx" data-sort="swish"></label>
+      <label>KOB kollektexport (.xls)<input type="file" name="kob_kollekt" accept=".xls" data-sort="kob_kollekt"></label>
+    </div>
+    <div class="grid">
+      <label>KOB insamlingsexport (.xls)<input type="file" name="kob_insamling" accept=".xls" data-sort="kob_insamling"></label>
+      <label>Ändamålskalender (.xlsx)<input type="file" name="kalender" accept=".xlsx" data-sort="kalender"></label>
+    </div>
+    <button type="submit">Ladda upp</button>
+  </form>
+</article>
+
 <form method="get" action="/" style="margin-bottom:1rem;">
   <label for="fil">Swish-rapport</label>
   <select id="fil" name="fil" onchange="this.form.submit()">
@@ -65,4 +83,16 @@ eftersom de bygger på transaktions-ID som kan ha ändrats.</article>
   </table></figure>
   {% endif %}
 {% endif %}
+
+<div id="upload-overlay" hidden>
+  <article>
+    <h3 id="upload-title">Laddar upp...</h3>
+    <progress id="upload-progress" value="0" max="100"></progress>
+    <p id="upload-detail" class="hv-meta"></p>
+    <ul id="upload-filelist" class="hv-filelist"></ul>
+    <p id="upload-note" class="hv-swish" hidden>Varje klar fil är sparad direkt. Avbryts uppladdningen kan du ladda om och fortsätta med de som saknas.</p>
+    <button id="upload-close" type="button" class="secondary" hidden>Stäng och ladda om</button>
+  </article>
+</div>
+<script src="/static/upload.js"></script>
 {% endblock %}

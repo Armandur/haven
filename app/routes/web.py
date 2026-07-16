@@ -5,10 +5,17 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.config import DATA_DIR, FORSAMLINGAR, MOTTAGARE, Kategori, Registreringssatt
+from app.config import (
+    DATA_DIR,
+    FORSAMLINGAR,
+    KALENDER_FIL,
+    MOTTAGARE,
+    Kategori,
+    Registreringssatt,
+)
 from app.database import (
     angra,
     bekrafta,
@@ -28,6 +35,7 @@ from app.database import (
     ta_bort_sarskild,
 )
 from app.core.regler import Overstyrning, SarskildPost
+from app.services.import_service import ta_emot
 from app.services.konfig_service import ladda_konfig_till_minne
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
@@ -56,7 +64,10 @@ def _vy(request: Request) -> KoVy:
 @router.get("/")
 def dashboard(request: Request):
     fil = _aktuell_fil(request)
-    rapporter = sorted(f.name for f in DATA_DIR.glob("*.xlsx")) if DATA_DIR.exists() else []
+    rapporter = sorted(
+        f.name for f in DATA_DIR.glob("*.xlsx")
+        if f.name != KALENDER_FIL and not f.name.startswith(".")
+    ) if DATA_DIR.exists() else []
     if fil is None:
         return templates.TemplateResponse(request, "dashboard.html", {
             "vy": None, "rapporter": rapporter, "vald": None,
@@ -67,6 +78,31 @@ def dashboard(request: Request):
         "vy": vy, "rapporter": rapporter, "vald": fil.name, "total": total,
         "registrerade": las_rapporter(), "andrad": rapport_andrad(fil.name),
     })
+
+
+@router.post("/import")
+async def importera(
+    request: Request,
+    swish: UploadFile | None = File(None),
+    kob_kollekt: UploadFile | None = File(None),
+    kob_insamling: UploadFile | None = File(None),
+    kalender: UploadFile | None = File(None),
+):
+    resultat = []
+    for sort, up in (("swish", swish), ("kob_kollekt", kob_kollekt),
+                     ("kob_insamling", kob_insamling), ("kalender", kalender)):
+        if up is None or not up.filename:
+            continue
+        innehall = await up.read()
+        try:
+            namn = ta_emot(sort, up.filename, innehall)
+            resultat.append({"sort": sort, "filnamn": namn, "ok": True})
+        except ValueError as e:
+            resultat.append({"sort": sort, "filnamn": up.filename, "ok": False,
+                             "fel": str(e)})
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"resultat": resultat})
+    return RedirectResponse("/", status_code=302)
 
 
 @router.get("/ko")

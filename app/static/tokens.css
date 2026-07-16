@@ -181,6 +181,27 @@ p.hv-badge { white-space: normal; }
 .hv-post details.hv-tx table { font-size: 0.82rem; margin-top: 0.5rem; }
 .hv-post details.hv-tx td, .hv-post details.hv-tx th { padding: 0.2rem 0.4rem; }
 
+/* Uppladdnings-overlay */
+#upload-overlay {
+  position: fixed; inset: 0; z-index: 3000; padding: 1rem;
+  background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center;
+}
+#upload-overlay[hidden] { display: none; }
+#upload-overlay article { max-width: 32rem; width: 100%; text-align: center; margin: 0; }
+#upload-overlay progress { width: 100%; }
+.hv-filelist {
+  list-style: none; margin: 0.75rem 0 0; padding: 0; max-height: 45vh; overflow-y: auto;
+  text-align: left; font-size: 0.85rem;
+}
+.ufile { padding: 0.35rem 0.1rem; border-bottom: 1px solid var(--pico-muted-border-color); }
+.ufile-rad { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.ufile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.ufile-status { flex: none; text-align: right; color: var(--pico-muted-color); font-variant-numeric: tabular-nums; }
+.ufile-uploading { color: var(--hv-accent); }
+.ufile-done { color: var(--hv-ok); }
+.ufile-error { color: var(--hv-varning); font-weight: 700; }
+.ufile-fel { margin-top: 0.2rem; font-size: 0.8rem; color: var(--hv-varning); white-space: normal; }
+
 .hv-swish { font-size: 0.8rem; color: var(--pico-muted-color); }
 .hv-tomt { color: var(--pico-muted-color); font-style: italic; }
 [hidden] { display: none !important; }

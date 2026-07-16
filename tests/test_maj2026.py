@@ -308,3 +308,24 @@ def test_historik_berorda_rader(tmp_path, monkeypatch):
                          datum_fran=h.datum_fran, datum_till=h.datum_till)
     rader = [t for t in res.rapport.transaktioner if regel.traffar(t)]
     assert len(rader) == 4        # fyra "ljus"-rader pa ACT
+
+
+def test_import_ta_emot(tmp_path, monkeypatch):
+    """Uppladdning: giltig fil sparas, fel filändelse och trasig fil avvisas."""
+    import app.services.import_service as imp
+    monkeypatch.setattr(imp, "DATA_DIR", tmp_path)
+
+    # Giltig Swish-rapport
+    namn = imp.ta_emot("swish", "maj.xlsx", SWISH.read_bytes())
+    assert (tmp_path / namn).exists()
+
+    # Fel filändelse
+    import pytest as _pytest
+    with _pytest.raises(ValueError, match="måste vara en .xls-fil"):
+        imp.ta_emot("kob_kollekt", "fel.xlsx", b"x")
+
+    # Trasig .xls avvisas och lämnar ingen fil kvar
+    with _pytest.raises(ValueError, match="Kunde inte läsa"):
+        imp.ta_emot("kob_kollekt", "trasig.xls", b"inte en xls")
+    assert not (tmp_path / "KOB_ParishCollectionReport_uppladdad.xls").exists()
+    assert not list(tmp_path.glob("*tmp*"))

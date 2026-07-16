@@ -240,7 +240,7 @@ def standard_rapportfil() -> Path | None:
     if not DATA_DIR.exists():
         return None
     for f in sorted(DATA_DIR.glob("*.xlsx")):
-        if f.name != KALENDER_FIL:
+        if f.name != KALENDER_FIL and not f.name.startswith("."):
             return f
     return None
 
