@@ -92,10 +92,16 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   `docs/kob-handbok.html` (text sida-för-sida + inline-skärmdumpar + TOC), som
   fältmappnings-referens för Fas 3 (kompletterar Claude-for-Chrome-prompten).
   Måttlig insats, delegerbar. Markdown-variant möjlig om LLM-referens är målet.
-- Kartlägg KOB:s inmatningsgränssnitt först: färdig prompt till Claude for Chrome
-  i `docs/kob-inmatning-prompt.md`. Resultatet (`docs/KOB-INMATNING.md`) blir
-  underlaget för userscriptet + ett exportformat (JSON) ur registreringskön.
-- Halvautomatisk KOB-inmatning via återanvänt userscript. Först här behöver
-  verktyget skilja på att komplettera befintliga tillfällen och skapa nya, och
-  veta att R- och S-tillfällen aldrig skapas.
+- [x] Kartlägg KOB:s inmatningsgränssnitt (klar): `docs/KOB-INMATNING.md` -
+  fullständig spec (selektorer, flöden, komplettera-vs-skapa, R/S-gruppering,
+  gränsvärdesvarning, attest-spärr) kartlagd mot KOB:s övningssystem. Prompten
+  som användes: `docs/kob-inmatning-prompt.md`.
+- [ ] **JSON-export ur registreringskön** i Håven ("kopiera underlag som JSON"),
+  med fälten userscriptet behöver (posttyp, församling/kollektställe, datum,
+  ändamål/beskrivning, öronmärkning, belopp, inbetalningsmetod=Swish 1).
+- [ ] **Userscriptet** som läser JSON:en och förifyller KOB enligt
+  `docs/KOB-INMATNING.md`. Skilj komplettera vs skapa; skapa aldrig R/S; stanna
+  för manuell granskning + Spara; attestering/PIN alltid manuellt. Kvarstår att
+  verifiera osäkerheterna i spec-avsnitt 8 (per-ändamål-mottagare, GUID:er, CSRF,
+  skarpt system-prefix).
 - Arkivering av gammalt underlag.
