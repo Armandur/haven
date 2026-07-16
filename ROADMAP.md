@@ -91,6 +91,9 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Fas 3 - bekvämlighet
 
+- Kartlägg KOB:s inmatningsgränssnitt först: färdig prompt till Claude for Chrome
+  i `docs/kob-inmatning-prompt.md`. Resultatet (`docs/KOB-INMATNING.md`) blir
+  underlaget för userscriptet + ett exportformat (JSON) ur registreringskön.
 - Halvautomatisk KOB-inmatning via återanvänt userscript. Först här behöver
   verktyget skilja på att komplettera befintliga tillfällen och skapa nya, och
   veta att R- och S-tillfällen aldrig skapas.
