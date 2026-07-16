@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.3.0
+// @version      0.4.0
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
 // @match        http://kob-utb.svenskakyrkan.se/*
@@ -545,43 +545,82 @@
     return qa('#collectionAmountsDetailsTable tbody tr').filter(tr => q('img.RowExpander', tr) || q('[name="amount.Amount"]', tr));
   }
 
-  async function fyllTillfalle(post) {
-    const grid = await waitFor(() => q('#collectionAmountsDetailsTable'));
-    if (!grid) { logga('FEL: hittade inte beloppsrutnätet.'); return; }
-    // Rader vars Församlings-cell (td1) matchar posten. Kollektställe okänt i Håven → be välja vid flera.
-    const rader = beloppsrader().filter(tr => {
+  // Distinkta kollektställe-basrader för församlingen. Dedup på Församling+Kollektställe
+  // (samma ställe kan förekomma flera gånger: basrad + beloppsunderrader). För varje
+  // ställe väljs raden med en ANVÄNDBAR grönt-+ (synlig, ej hiddenrowexpander).
+  function kollektställeRader(post) {
+    const alla = beloppsrader().filter(tr => {
       const tds = qa('td', tr);
       return tds[1] && textMatch(synligText(tds[1]), post.forsamling) && q('img.RowExpander', tr);
     });
-    if (rader.length === 0) {
+    const karta = new Map();
+    for (const tr of alla) {
+      const tds = qa('td', tr);
+      const nyckel = normalisera(synligText(tds[1]) + '|' + synligText(tds[3]));
+      const exp = q('img.RowExpander', tr);
+      const användbar = exp && !exp.classList.contains('hiddenrowexpander') && exp.offsetParent !== null;
+      const bef = karta.get(nyckel);
+      if (!bef || (!bef.användbar && användbar)) karta.set(nyckel, { tr, användbar, tds });
+    }
+    return Array.from(karta.values());
+  }
+
+  async function fyllTillfalle(post) {
+    const grid = await waitFor(() => q('#collectionAmountsDetailsTable'));
+    if (!grid) { logga('FEL: hittade inte beloppsrutnätet.'); return; }
+    const ställen = kollektställeRader(post);
+    if (ställen.length === 0) {
       logga(`FEL: ingen rad matchar församlingen "${post.forsamling}". Kontrollera manuellt.`);
       return;
     }
-    if (rader.length === 1) { await fyllRad(rader[0], post); return; }
-    logga(`${rader.length} kollektställen för ${post.forsamling} → be användaren välja rad.`);
+    if (ställen.length === 1) { await fyllRad(ställen[0].tr, post); return; }
+    logga(`${ställen.length} kollektställen för ${post.forsamling} → be användaren välja rad.`);
     visaVal(`Vilket kollektställe ska ${beloppTillKomma(post.belopp)} kr bokas på?`,
-      rader.map(tr => {
-        const tds = qa('td', tr);
-        return { text: `${synligText(tds[1])} / ${synligText(tds[3])}`, onclick: () => { rensaVal(); fyllRad(tr, post); } };
-      }));
+      ställen.map(({ tr, tds, användbar }) => ({
+        text: `${synligText(tds[1])} / ${synligText(tds[3])}` + (användbar ? '' : ' (grönt + dolt - försöker ändå)'),
+        onclick: () => { rensaVal(); fyllRad(tr, post); },
+      })));
   }
 
   // Inbetalningsmetod-selecten fylls asynkront efter grönt +. Vänta tills mål-
-  // optionen finns, sätt värdet och trigga även via sidans jQuery (KOB-widgets).
+  // optionen finns, sätt värdet, trigga via sidans jQuery (KOB-widgets) och
+  // re-verifiera (mot race där KOB nollar valet). DIAG-logg om det ändå misslyckas.
+  function hittaMetodSelect(nyRad) {
+    let s = q('[name="amount.PaymentMethodID"]', nyRad) || q('[name="amount.PaymentMethodId"]', nyRad);
+    if (!s) s = qa('select', nyRad).find(sel => Array.from(sel.options).some(o => /swish/i.test(o.textContent)));
+    return s || null;
+  }
+
+  function metodVald(select, text) {
+    const o = select.options[select.selectedIndex];
+    return !!o && normalisera(o.textContent).includes(normalisera(text));
+  }
+
   async function väljMetod(nyRad, text) {
     const metod = await waitFor(() => {
-      const s = q('[name="amount.PaymentMethodID"]', nyRad) || q('[name="amount.PaymentMethodId"]', nyRad);
+      const s = hittaMetodSelect(nyRad);
       if (!s || s.options.length < 2) return null;
-      const finns = Array.from(s.options).some(o => normalisera(o.textContent).includes(normalisera(text)));
-      return finns ? s : null;
+      return Array.from(s.options).some(o => normalisera(o.textContent).includes(normalisera(text))) ? s : null;
     }, 6000);
-    if (!metod) return false;
-    const ok = valjOptionViaText(metod, text);
-    try {
-      const w = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
-      if (ok && w.jQuery) w.jQuery(metod).val(metod.value).trigger('change');
-    } catch (e) { /* ignoreras */ }
-    return ok;
+    if (!metod) {
+      const s = hittaMetodSelect(nyRad);
+      logga('DIAG metod-select: ' + (s
+        ? `name=${s.name || '(namnlös)'} options=[${Array.from(s.options).map(o => o.textContent.trim()).join(' | ')}]`
+        : 'ingen <select> i den nya raden'));
+      return false;
+    }
+    const trigga = () => {
+      valjOptionViaText(metod, text);
+      try {
+        const w = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+        if (w.jQuery) w.jQuery(metod).val(metod.value).trigger('change');
+      } catch (e) { /* ignoreras */ }
+    };
+    trigga();
+    // KOB kan renda om selecten strax efter grönt + och nolla valet - re-verifiera.
+    const kvar = await waitFor(() => metodVald(metod, text) ? true : null, 1200) || metodVald(metod, text);
+    if (!kvar) { trigga(); return metodVald(metod, text); }
+    return true;
   }
 
   // Hitta Spara-knappen för belopp-rutnätet (exakt "Spara", ej "...klarmarkera").
@@ -616,23 +655,18 @@
   }
 
   async function fyllRad(rad, post) {
-    const expander = q('img.RowExpander', rad);
+    const expander = q('img.RowExpander:not(.hiddenrowexpander)', rad) || q('img.RowExpander', rad);
     if (!expander) { logga('FEL: saknar grönt + på raden.'); return; }
-    const föreAntal = beloppsrader().length;
+    // Snapshot av befintliga beloppsfält → den nya raden är den vars fält är nytt.
+    const föreInputs = new Set(qa('#collectionAmountsDetailsTable [name="amount.Amount"]'));
     logga('Klickar grönt + (lägger ny Swish-rad, rör inte befintlig).');
     expander.click();
-    // Ny tom rad dyker upp direkt under; identifiera den (ny + tomt beloppsfält).
     const nyRad = await waitFor(() => {
-      if (beloppsrader().length <= föreAntal) return null;
-      let n = rad.nextElementSibling;
-      while (n) {
-        const inp = q('[name="amount.Amount"]', n);
-        if (inp && !inp.value) return n;
-        n = n.nextElementSibling;
-      }
-      return null;
-    });
-    if (!nyRad) { logga('FEL: ny beloppsrad dök inte upp efter grönt +.'); return; }
+      const ny = qa('#collectionAmountsDetailsTable [name="amount.Amount"]')
+        .find(inp => !föreInputs.has(inp) && !inp.value);
+      return ny ? ny.closest('tr') : null;
+    }, 6000);
+    if (!nyRad) { logga('FEL: ny beloppsrad dök inte upp efter grönt + (klicka manuellt).'); return; }
 
     sättFält(q('[name="amount.Amount"]', nyRad), beloppTillKomma(post.belopp));
     if (!(await väljMetod(nyRad, post.inbetalningsmetod))) {
