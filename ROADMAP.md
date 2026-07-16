@@ -10,8 +10,8 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   historiken. MVP: ändra målet (ändamål/typ/tillfällesdatum) och behåll urvalet;
   ändra själva radurvalet lämnas tills vidare till ta-bort-och-skapa-om. Liten insats.
 
-- [ ] **Filter "visa bara diffar" på /avstamning.** En toggle som döljer rena
-  rader/församlingar utan diff, så man snabbt går till det som behöver åtgärdas.
+- [x] **Filter "visa bara diffar" på /avstamning.** (klar) Toggle som döljer rena
+  församlingskort och rader utan diff, i både kollekt- och gåvatabellen.
   JS-toggle (progressivt, allt visas utan JS); märk rader `data-diff` och göm de
   utan. Gäller både kollekt- och gåvatabellen. Liten insats.
 
@@ -40,14 +40,9 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
   `Kopost` bär med transaktionerna och en `<details>`-utfällning i `ko.html`.
   Låg insats.
 
-- [ ] **Kanoniskt församlingsnamn = KOB-formen.** Visa "Härnösands
-  domkyrkoförsamling" (inte "Domkyrkoförsamlingen") och "Stigsjö församling"
-  (litet f) överallt, så underlaget matchar exakt det handläggaren ser och
-  skriver i KOB. Innebär att byta `kanoniskt` <-> `alias` i `app/config.py`
-  (Swish-stavningen blir alias). Matchningen är kortkodsbaserad så
-  ändamålsmatchningen påverkas inte; klassning och KOB-normalisering behåller
-  Swish- och KOB-formerna som alias. Låg insats, avviker medvetet från spec 6.4
-  som listade Swish-formen som kanonisk.
+- [x] **Kanoniskt församlingsnamn = KOB-formen.** (klar) "Härnösands
+  domkyrkoförsamling" och "Stigsjö församling" (litet f) överallt; Swish-stavningen
+  blev alias.
 
 ## Fas 1a - KOB-avstämning (klar)
 
@@ -67,7 +62,9 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 - [x] Radval: välj församling/konto, se raderna, filtrera live (datum/meddelande)
   och bocka för de rader som ska justeras. Stabil tx_id per transaktion; regeln
   lagrar bockade tx_ids (filter finns kvar som alternativ, bakåtkompatibelt).
-- [ ] Kvar: historik på överstyrningar (vem/när/tidigare värde) - byggs med Fas 2.
+- [x] Historik på överstyrningar (skapad/borttagen + tidpunkt + berörda rader) -
+  klar. "Vem" saknas tills auth finns; "tidigare värde" vid redigering hör ihop
+  med redigera-överstyrning-todon ovan.
 
 ## Fas 2 - tillstånd, status och redigerbar konfiguration
 
