@@ -4,6 +4,12 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
+- [ ] **Redigera befintliga ändamålsöverstyrningar** (inte bara ta bort + skapa
+  ny). "Ändra"-knapp per överstyrning som förifyller formuläret (som mottagare i
+  /konfig) och uppdaterar raden i stället för att skapa ny, med "ändrad"-post i
+  historiken. MVP: ändra målet (ändamål/typ/tillfällesdatum) och behåll urvalet;
+  ändra själva radurvalet lämnas tills vidare till ta-bort-och-skapa-om. Liten insats.
+
 - [ ] **Filter "visa bara diffar" på /avstamning.** En toggle som döljer rena
   rader/församlingar utan diff, så man snabbt går till det som behöver åtgärdas.
   JS-toggle (progressivt, allt visas utan JS); märk rader `data-diff` och göm de
