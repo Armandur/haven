@@ -87,6 +87,11 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Fas 3 - bekvämlighet
 
+- [ ] **KOB-handboken (PDF, 76 s) -> HTML-dokumentation.** `KOB handbok.pdf`
+  (i vmworkspace) är textbaserad med skärmdumpar av formulären. Omarbeta till
+  `docs/kob-handbok.html` (text sida-för-sida + inline-skärmdumpar + TOC), som
+  fältmappnings-referens för Fas 3 (kompletterar Claude-for-Chrome-prompten).
+  Måttlig insats, delegerbar. Markdown-variant möjlig om LLM-referens är målet.
 - Kartlägg KOB:s inmatningsgränssnitt först: färdig prompt till Claude for Chrome
   i `docs/kob-inmatning-prompt.md`. Resultatet (`docs/KOB-INMATNING.md`) blir
   underlaget för userscriptet + ett exportformat (JSON) ur registreringskön.
