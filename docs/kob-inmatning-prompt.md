@@ -31,6 +31,13 @@ teknisk specifikation som ska ligga till grund för ett **userscript
 (Tampermonkey/Violentmonkey)** som förifyller inmatningsformulären utifrån ett
 färdigt underlag.
 
+**KOB-handboken finns i en annan flik.** Jag har öppnat KOB:s handbok som HTML i
+en annan flik i den här webbläsaren, som du har åtkomst till. Byt gärna till den
+fliken och läs själv när du behöver - den innehåller hela handboken med
+skärmdumpar av formulären och en innehållsförteckning (avsnitt som
+"Kollekttillfälle", "Kollektbelopp", "Insamling/gåva"). Använd den som facit för
+hur flödet är tänkt att fungera, och jämför mot vad du faktiskt ser i KOB:s UI.
+
 **Miljö: detta är KOB:s övningssystem** - du får skapa, fylla i, spara,
 klarmarkera och attestera fritt för att fullt kartlägga flödet, med riktiga
 klick och riktig inmatning (inga skarpa data påverkas). Utforska hela vägen, men
@@ -155,8 +162,8 @@ Producera en **Markdown-spec** (`KOB-INMATNING.md`) med:
 - Allt lokalt/i webbläsaren; ingen KOB-data till extern tjänst.
 
 Börja med att beskriva vad du ser i nuvarande vy och fråga vilken posttyp vi ska
-kartlägga först om det är oklart. Använd gärna KOB-handboken (jag kan klistra in
-avsnitt) som referens för vad du ska leta efter.
+kartlägga först om det är oklart. Slå upp KOB-handboken i den andra fliken när du
+behöver referens för hur ett flöde eller fält är tänkt att fungera.
 
 ---
 
