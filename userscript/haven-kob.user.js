@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.2.0
+// @version      0.3.0
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
 // @match        http://kob-utb.svenskakyrkan.se/*
@@ -184,6 +184,13 @@
   }
   function nollställState() { sessionStorage.removeItem(STATE_KEY); ritaPanel(); }
 
+  // UI-inställningar som ska överleva KOB:s sidladdningar (ej PIN). Egen nyckel så
+  // "Återställ underlag" inte nollar dem.
+  const PREFS_KEY = 'haven_kob_prefs';
+  function laddaPrefs() { try { return JSON.parse(sessionStorage.getItem(PREFS_KEY) || '{}'); } catch (e) { return {}; } }
+  function pref(k, fallback) { const v = laddaPrefs()[k]; return v === undefined ? fallback : v; }
+  function sättPref(k, v) { const p = laddaPrefs(); p[k] = v; sessionStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+
   function tillämpaUnderlag(text, källa) {
     const r = validateUnderlag(text);
     if (!r.ok) { alert('Kunde inte läsa underlaget:\n' + r.fel); return false; }
@@ -283,7 +290,7 @@
       const fab = document.createElement('button');
       fab.id = 'haven-kob-fab';
       fab.textContent = 'Håven';
-      fab.onclick = () => panelEl.classList.toggle('open');
+      fab.onclick = () => sättPref('open', panelEl.classList.toggle('open'));
       document.body.appendChild(fab);
     }
     if (!panelEl) {
@@ -301,7 +308,7 @@
     const stäng = document.createElement('button');
     stäng.textContent = '✕';
     stäng.style.cssText = 'background:transparent;border:none;color:#fff;font-size:16px';
-    stäng.onclick = () => panelEl.classList.remove('open');
+    stäng.onclick = () => { panelEl.classList.remove('open'); sättPref('open', false); };
     h.appendChild(stäng);
     panelEl.appendChild(h);
 
@@ -364,6 +371,20 @@
         kropp.appendChild(not);
       }
 
+      // Auto-spara (default på): klickar Spara efter ifylld rad. Gränsvärdesvarning
+      // bekräftas ALDRIG automatiskt. Ej attesterat belopp är lätt att ta bort.
+      const asWrap = document.createElement('div');
+      asWrap.style.cssText = 'border-top:1px solid #eee;margin-top:8px;padding-top:8px';
+      const asLbl = document.createElement('label');
+      const asCb = document.createElement('input');
+      asCb.type = 'checkbox';
+      asCb.checked = pref('autoSpara', true);
+      asCb.onchange = () => sättPref('autoSpara', asCb.checked);
+      asLbl.appendChild(asCb);
+      asLbl.appendChild(document.createTextNode(' Auto-spara efter ifylld rad (bekräftar ej gränsvärdesvarning)'));
+      asWrap.appendChild(asLbl);
+      kropp.appendChild(asWrap);
+
       // Attest opt-in
       const at = document.createElement('div');
       at.id = 'haven-kob-attest';
@@ -408,6 +429,9 @@
     loggEl = document.createElement('div');
     loggEl.id = 'haven-kob-logg';
     kropp.appendChild(loggEl);
+
+    // Behåll utfällt läge över KOB:s sidladdningar (persistent val).
+    if (pref('open', false)) panelEl.classList.add('open');
   }
 
   function visaVal(titel, val) {
@@ -542,6 +566,55 @@
       }));
   }
 
+  // Inbetalningsmetod-selecten fylls asynkront efter grönt +. Vänta tills mål-
+  // optionen finns, sätt värdet och trigga även via sidans jQuery (KOB-widgets).
+  async function väljMetod(nyRad, text) {
+    const metod = await waitFor(() => {
+      const s = q('[name="amount.PaymentMethodID"]', nyRad) || q('[name="amount.PaymentMethodId"]', nyRad);
+      if (!s || s.options.length < 2) return null;
+      const finns = Array.from(s.options).some(o => normalisera(o.textContent).includes(normalisera(text)));
+      return finns ? s : null;
+    }, 6000);
+    if (!metod) return false;
+    const ok = valjOptionViaText(metod, text);
+    try {
+      const w = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+      if (ok && w.jQuery) w.jQuery(metod).val(metod.value).trigger('change');
+    } catch (e) { /* ignoreras */ }
+    return ok;
+  }
+
+  // Hitta Spara-knappen för belopp-rutnätet (exakt "Spara", ej "...klarmarkera").
+  function sparaKnappar() {
+    const grid = q('#collectionAmountsDetailsTable');
+    const scope = (grid && grid.closest('form')) || document;
+    const ärSpara = b => b.offsetParent !== null && normalisera(b.textContent || b.value || '') === 'spara';
+    let k = qa('button, input[type=submit], input[type=button]', scope).filter(ärSpara);
+    if (!k.length && scope !== document) k = qa('button, input[type=submit], input[type=button]').filter(ärSpara);
+    return k;
+  }
+
+  async function sparaBelopp() {
+    const knappar = sparaKnappar();
+    if (knappar.length !== 1) {
+      logga(`Auto-spara: hittade ${knappar.length} Spara-knappar (ej entydigt) - spara manuellt.`);
+      return;
+    }
+    logga('Auto-spara på: klickar Spara.');
+    knappar[0].click();
+    // Gränsvärdesvarning (§5): auto-bekräfta ALDRIG - lyft fram, låt människan avgöra.
+    const varning = await waitFor(() => {
+      const n = document.querySelector('.noty_bar.noty_type_warning');
+      return (n && /gränsvärde|varning/i.test(n.textContent || '')) ? n : null;
+    }, 2500);
+    if (varning) {
+      logga('GRÄNSVÄRDESVARNING: klickar INTE "Ja" automatiskt - avgör Ja/Nej själv i KOB.');
+      panelEl.classList.add('open');
+    } else {
+      logga('Spara klickad (kontrollera grön bekräftelse i KOB).');
+    }
+  }
+
   async function fyllRad(rad, post) {
     const expander = q('img.RowExpander', rad);
     if (!expander) { logga('FEL: saknar grönt + på raden.'); return; }
@@ -562,12 +635,18 @@
     if (!nyRad) { logga('FEL: ny beloppsrad dök inte upp efter grönt +.'); return; }
 
     sättFält(q('[name="amount.Amount"]', nyRad), beloppTillKomma(post.belopp));
-    const metod = q('[name="amount.PaymentMethodID"]', nyRad) || q('[name="amount.PaymentMethodId"]', nyRad);
-    if (!valjOptionViaText(metod, post.inbetalningsmetod)) {
+    if (!(await väljMetod(nyRad, post.inbetalningsmetod))) {
       logga(`VARNING: kunde inte välja inbetalningsmetod "${post.inbetalningsmetod}" - välj manuellt.`);
+    } else {
+      logga(`Inbetalningsmetod satt: ${post.inbetalningsmetod}.`);
     }
-    logga(`KLART: ${beloppTillKomma(post.belopp)} kr / ${post.inbetalningsmetod} ifyllt. Granska och tryck SPARA själv (Alt+S).`);
-    logga('Stannar före Spara med flit. Auto-klickar aldrig Spara eller gränsvärdesvarning ("Ja").');
+    logga(`Ifyllt: ${beloppTillKomma(post.belopp)} kr / ${post.inbetalningsmetod}. Rör inte befintlig rad.`);
+
+    if (pref('autoSpara', true)) {
+      await sparaBelopp();
+    } else {
+      logga('Auto-spara av: granska och tryck Spara själv (Alt+S).');
+    }
     if (attestLage) logga('Attest-läge PÅ: attestera manuellt efter Spara (attest-DOM ej verifierad i denna version).');
     avslutaPost(null);
     panelEl.classList.add('open');
