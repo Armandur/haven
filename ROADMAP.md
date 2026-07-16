@@ -4,13 +4,10 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
-- [x] **Redigera befintliga ändamålsöverstyrningar** (klar) - Ändra-knapp
-  som förifyller ett redigeringsformulär och uppdaterar målet (ändamål/typ/
-  tillfällesdatum); urvalet behålls, historiken loggar 'ändrad'. TIDIGARE:
-  ny). "Ändra"-knapp per överstyrning som förifyller formuläret (som mottagare i
-  /konfig) och uppdaterar raden i stället för att skapa ny, med "ändrad"-post i
-  historiken. MVP: ändra målet (ändamål/typ/tillfällesdatum) och behåll urvalet;
-  ändra själva radurvalet lämnas tills vidare till ta-bort-och-skapa-om. Liten insats.
+- [x] **Redigera befintliga ändamålsöverstyrningar** (klar) - Ändra-knapp som
+  förifyller ett redigeringsformulär och uppdaterar målet (ändamål/typ/
+  tillfällesdatum); urvalet behålls, historiken loggar "ändrad". Vill man ändra
+  själva radurvalet får man ta bort och skapa ny.
 
 - [x] **Filter "visa bara diffar" på /avstamning.** (klar) Toggle som döljer rena
   församlingskort och rader utan diff, i både kollekt- och gåvatabellen.
