@@ -4,6 +4,14 @@ Nyast/närmast först. Faserna följer SPEC.md avsnitt 13.
 
 ## Närmast (påsatta todos)
 
+- [ ] **Filuppladdning i webben.** Idag läses alla filer från `data/`-katalogen på
+  disk (måste läggas dit via SFTP) - det finns ingen uppladdning i UI:t. Handläggaren
+  behöver kunna ladda upp månadens Swish-rapport (.xlsx) och de två KOB-exporterna
+  (.xls), och gärna årets ändamålskalender. Sparas i `HAVEN_DATA_DIR` med sanerat
+  filnamn, valideras (rätt filändelse + testparsas för begripligt fel), async med
+  spinner enligt konvention men progressivt (funkar utan JS). **Hög prioritet** -
+  verktyget är i praktiken oanvändbart för handläggaren utan detta.
+
 - [x] **Fäll ut berörda rader i historiken.** (klar) Varje historikpost på
   `/justeringar` kan expanderas och visa exakt vilka transaktionsrader ändringen
   gällde. `regelhistorik` sparar urvalet (tx_ids/filter/scope) vid händelsen och
