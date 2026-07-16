@@ -46,6 +46,13 @@ klick och riktig inmatning (inga skarpa data påverkas). Utforska hela vägen, m
   kartlägga F-flödet behöver du därför **själv skapa ett kollekttillfälle** och
   gå hela vägen: skapa -> välj mottagare/ändamål/kollektställe -> klarmarkera ->
   registrera belopp med inbetalningsmetod Swish.
+- **Testa även komplettera-fallet:** registrera först ett **kontant** belopp på
+  ett kollektställe och **attestera** det (om behörigheten tillåter i övning),
+  gå sedan via **Sök kollekttillfälle** (tillfället syns inte i "ej registrerade
+  belopp"-listan längre) och lägg till ett **Swish**-belopp på samma kollektställe
+  via **gröna +-ikonen** utan att röra kontantraden. Detta motsvarar att en kollega
+  redan registrerat kontanten och vi kompletterar med det swishade beloppet senare.
+  Dokumentera selektor för +-ikonen och den nya radens fält i det läget.
 - **Riks-/stiftskollekter** (R/S) registreras nationellt "för hela året" - kolla
   om sådana tillfällen finns i övningssystemet. Finns de: kartlägg
   komplettera-belopp-flödet på ett befintligt R/S-tillfälle. Saknas de: notera det

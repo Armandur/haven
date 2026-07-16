@@ -77,6 +77,32 @@ På ett redan skapat tillfälle finns knappen **Välj...** (`button` + hamburger
 Väg: Meny **Kollekt → Kollektbelopp – ej attesterade** → `GET /Collection/CollectionOccasionSearch/UnAttestedCollectionAmounts` → klick på rad → samma tillfällesvy men filtrerad till "Ej attesterade", med kryssrutor per rad + knapp **"Attestera valda rader"** (`button` grön, klass innehåller `bla`).
 Vid klick, om användaren saknar personlig PIN-kod visas först dialogen **"Skapa ny personlig 4-siffrig PIN-kod"** (fält "PIN-kod" + "Verifiera PIN-kod" + knappar **Klar**/**Avbryt**). Efter att PIN skapats försökte systemet attestera automatiskt och gav felmeddelandet: *"Ett eller flera kollektbelopp gick inte att attestera. Användaren saknar attesträtt. Registreras under Arkiv, Administrera användare."* — dvs. attestering kräver att man dessutom är registrerad i Attestregistret, vilket testanvändaren inte var. Jag valde **medvetet att INTE** gå vidare och lägga till attesträtt åt användaren i Administrera användare, eftersom det innebär att ändra behörigheter/åtkomstkontroll – något jag inte utför även i övningsmiljön. Attestflödets DOM (kryssrutor, knapp, PIN-dialog, felmeddelande) är dock fullt dokumenterat ovan.
 
+### 1.7 Komplettera en befintlig F-kollekt (kollega har redan registrerat/attesterat kontantbeloppet)
+**Vanligt Håven-fall:** en kollega har redan skapat och klarmarkerat
+församlingskollekttillfället och registrerat (och kanske attesterat) det
+**kontanta** beloppet. Månaden efter ska vi komplettera samma tillfälle med det
+**swishade** beloppet.
+
+- **Tillfället syns INTE i "Kollektbelopp – registrera"-listan** (den visar bara
+  tillfällen som *saknar* registrerade belopp; så fort ett kollektställe fått ett
+  belopp faller det ur listan). Använd därför **Sök kollekttillfälle** (deep-link,
+  se 1.1/2.1) med Typ=Församlingskollekt + datum + ändamål för att hitta det.
+- På tillfället: hitta rätt **kollektställe-rad** (matcha via text), klicka på den
+  **gröna +-ikonen** längst till höger på raden och fyll i en ny rad med Swish-
+  beloppet och Inbetalningsmetod = Swish 1. Handboken ("Lägg till ytterligare
+  belopp", s27) bekräftar: *det går att lägga till ett belopp där det redan finns
+  ett registrerat, makulerat, **attesterat** eller utbetalt belopp* – man ändrar
+  alltså inte kollegans kontantrad, man lägger till en egen Swish-rad bredvid.
+- Filterknappen **"alla"** i listen kollektbelopp visar alla kollektställen och
+  deras status (ska vara markerad vid registrering). Kollegans kontantbelopp har
+  status **A** (attesterat) och är låst - rör den inte; lägg bara till Swish-raden.
+- **Userscript-konsekvens:** komplettera-logiken får aldrig skriva över en
+  befintlig belopp-rad. Den ska, per kollektställe i underlaget, klicka + och fylla
+  i en **ny** Swish-rad. Attestering av den nya raden sker sedan manuellt som vanligt.
+- **Ej live-verifierat:** övningssystemet saknade F-kollekter, så denna exakta
+  sekvens (skapa F → registrera+attestera kontant → lägg till Swish via +) är
+  bekräftad via handboken men inte körd live. Bör testas i övning innan bygge (se avsnitt 8).
+
 ---
 
 ## 2. Riks- och stiftskollekt (R/S) – endast komplettera belopp
@@ -220,3 +246,4 @@ Detta är **inte** en särskild KOB-funktion utan samma formulär som avsnitt 3,
 - **System-GUID för Kollekttyp** (Rikskollekt/Stiftskollekt/Församlingskollekt-undertyper) för deep-link-sökning – läs ur select-optionerna.
 - **CSRF:** ingen token syntes i DOM, men verifiera på nätverksnivå (DevTools) innan man litar på att POST utan token fungerar.
 - Kartlagt mot **övningssystemet 2025.3.2** – verifiera selektorer mot skarpa systemet (kan skilja i version/URL-prefix `KOB_Utb1` vs skarpt prefix).
+- **Komplettera F-kollekt med Swish när kontanten redan är attesterad (avsnitt 1.7):** bekräftat via handboken men ej live-testat (inga F-kollekter i övning). Verifiera i övning: skapa F-tillfälle, registrera+attestera ett kontantbelopp, gå via Sök kollekttillfälle, och bekräfta att gröna + låter dig lägga till en Swish-rad på samma kollektställe utan att röra kontantraden. Fånga selektor/beteende för +-ikonen och den nya radens fält i det läget.
