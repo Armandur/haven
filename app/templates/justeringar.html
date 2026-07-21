@@ -3,6 +3,7 @@
 {% block content %}
 {% set u = vy.resultat.underlag %}
 {% set q = "?fil=" ~ (vald|urlencode) %}
+{% set qamp = "&fil=" ~ (vald|urlencode) %}
 <h1>Justeringar - {{ period }}</h1>
 <p class="hv-meta">
   Kollekttillfällen med diff:

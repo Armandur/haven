@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}Arbetskö{% endblock %}
 
-{% macro kort(p, nasta, period, breakin=false) %}
+{% macro kort(p, nasta, period, vald, breakin=false) %}
 <article class="hv-post {% if breakin %}hv-breakin typ-kant-{{ p.typ_kod|lower }}{% endif %} {% if p.bekraftad %}hv-klar{% elif nasta and p.nyckel == nasta.nyckel %}hv-aktuell{% endif %}"
          data-nyckel="{{ p.nyckel }}">
   <header>
@@ -74,12 +74,12 @@
   {% endif %}
 
   <div class="hv-knappar" data-roll="knappar">
-    <form method="post" action="/ko/bekrafta" data-roll="bekrafta-form" {% if p.bekraftad %}hidden{% endif %}>
+    <form method="post" action="/ko/bekrafta?fil={{ vald|urlencode }}" data-roll="bekrafta-form" {% if p.bekraftad %}hidden{% endif %}>
       <input type="hidden" name="nyckel" value="{{ p.nyckel }}">
       <input type="hidden" name="period" value="{{ period }}">
       <button type="submit">Bekräfta registrerad</button>
     </form>
-    <form method="post" action="/ko/angra" data-roll="angra-form" {% if not p.bekraftad %}hidden{% endif %}>
+    <form method="post" action="/ko/angra?fil={{ vald|urlencode }}" data-roll="angra-form" {% if not p.bekraftad %}hidden{% endif %}>
       <input type="hidden" name="nyckel" value="{{ p.nyckel }}">
       <input type="hidden" name="period" value="{{ period }}">
       <button type="submit" class="secondary outline">Ångra</button>
@@ -123,9 +123,9 @@
       {% if s.typ == 'rubrik' %}
         <h2 class="hv-forsrubrik">{{ s.forsamling }}{% if s.forts %} <span class="hv-forts">(forts.)</span>{% endif %}</h2>
       {% elif s.typ == 'rs' %}
-        {{ kort(s.post, nasta, rap.period, breakin=true) }}
+        {{ kort(s.post, nasta, rap.period, vald, breakin=true) }}
       {% else %}
-        {{ kort(s.post, nasta, rap.period) }}
+        {{ kort(s.post, nasta, rap.period, vald) }}
       {% endif %}
     {% endfor %}
   </div>
@@ -133,8 +133,24 @@
   <div class="hv-panel hv-panel-gava">
     {% if not vy.gava_poster %}<p class="hv-tomt">Inga insamlingar/gåvor.</p>{% endif %}
     {% for p in vy.gava_poster %}
-      {{ kort(p, nasta, rap.period) }}
+      {{ kort(p, nasta, rap.period, vald) }}
     {% endfor %}
   </div>
 </div>
+
+<style>
+  body.hide-registered .hv-post.hv-klar {
+    display: none !important;
+  }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var cb = document.getElementById("filter-ejreg");
+    if (cb) {
+      cb.addEventListener("change", function(e) {
+        document.body.classList.toggle("hide-registered", e.target.checked);
+      });
+    }
+  });
+</script>
 {% endblock %}
