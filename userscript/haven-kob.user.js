@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.5.0
+// @version      0.5.1
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
 // @updateURL    http://ubuntu-ai:8003/kob-userscript.user.js
@@ -37,7 +37,7 @@
   // ---------------------------------------------------------------------------
   // Konstanter
   // ---------------------------------------------------------------------------
-  const SCRIPT_VERSION = '0.5.0';   // håll i synk med @version
+  const SCRIPT_VERSION = '0.5.1';   // håll i synk med @version
   const STATE_KEY = 'haven_kob_state';
   const HAVEN_URL_KEY = 'haven_export_url';
   const HAVEN_URL_DEFAULT = 'http://ubuntu-ai:8003/ko/export.json';
@@ -146,9 +146,9 @@
   // miljöspecifika - hårdkoda aldrig, §9.6). Returnerar true om satt.
   function valjOptionViaText(select, text) {
     if (!select) return false;
-    const mål = normalisera(text);
-    let träff = Array.from(select.options).find(o => normalisera(o.textContent) === mål);
-    if (!träff) träff = Array.from(select.options).find(o => normalisera(o.textContent).includes(mål) && mål);
+    const mål = normalisera(text).replace(/\s+/g, '');
+    let träff = Array.from(select.options).find(o => normalisera(o.textContent).replace(/\s+/g, '') === mål);
+    if (!träff) träff = Array.from(select.options).find(o => normalisera(o.textContent).replace(/\s+/g, '').includes(mål) && mål);
     if (!träff) return false;
     select.value = träff.value;
     select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -609,14 +609,15 @@
 
   function metodVald(select, text) {
     const o = select.options[select.selectedIndex];
-    return !!o && normalisera(o.textContent).includes(normalisera(text));
+    return !!o && normalisera(o.textContent).replace(/\s+/g, '').includes(normalisera(text).replace(/\s+/g, ''));
   }
 
   async function väljMetod(nyRad, text) {
     const metod = await waitFor(() => {
       const s = hittaMetodSelect(nyRad);
       if (!s || s.options.length < 2) return null;
-      return Array.from(s.options).some(o => normalisera(o.textContent).includes(normalisera(text))) ? s : null;
+      const mål = normalisera(text).replace(/\s+/g, '');
+      return Array.from(s.options).some(o => normalisera(o.textContent).replace(/\s+/g, '').includes(mål)) ? s : null;
     }, 6000);
     if (!metod) {
       const s = hittaMetodSelect(nyRad);
