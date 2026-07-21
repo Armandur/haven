@@ -209,12 +209,17 @@ def test_overstyrning_via_tx_ids(res):
     assert avst.antal_diffar == 0
 
 
-def test_status_harleds(res):
+def test_status_harleds(res, monkeypatch):
     """Status ska härledas ur bekräftelser (inga i test-DB) + avstämning."""
     from app.database import init_db
+    import app.services.avstamning_service as avst_svc
     from app.services.avstamning_service import kor_avstamning
     from app.services.ko_service import KoVy, bygg_ko
     from app.services.status_service import bygg_status
+    # Pinna KOB-filerna till maj-facit; annars kan _senaste plocka en senare
+    # uppladdad KOB-export (t.ex. KOB_..._uppladdad.xls) och avstämningen bryts.
+    monkeypatch.setattr(avst_svc, "KOB_KOLLEKT_GLOB", KOB_KOLLEKT.name)
+    monkeypatch.setattr(avst_svc, "KOB_INSAMLING_GLOB", KOB_INSAMLING.name)
     init_db()
     vy = KoVy(resultat=res, poster=bygg_ko(res.underlag))
     avst = kor_avstamning(res)
