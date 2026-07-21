@@ -20,7 +20,7 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
     <tbody>
       {% for r in rader %}
       <tr>
-        <td>{{ r.datum }}</td>
+        <td style="white-space: nowrap;">{{ r.datum }}</td>
         <td>{{ r.veckodag }}</td>
         <td>{{ r.helgdag }}</td>
         <td>{% if r.typ %}<span class="hv-badge typ-{{ r.typ.value|lower }}">{{ r.typ.value }}</span>{% endif %}</td>
