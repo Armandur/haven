@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from collections import Counter
 
 from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp
 from app.core.aggregate import Underlag
@@ -29,6 +30,11 @@ class Delpost:
     belopp: Decimal
     antal: int
     transaktioner: list[Transaktion] = field(default_factory=list)
+
+    @property
+    def dedupade_meddelanden(self) -> list[tuple[str, int]]:
+        c = Counter(t.meddelande.strip().capitalize() if t.meddelande else "" for t in self.transaktioner)
+        return sorted(c.items(), key=lambda x: (x[0] == "", x[0]))
 
 
 @dataclass
@@ -50,6 +56,19 @@ class Kopost:
     bekraftad: bool = False
     kraver_manuell_andamal: bool = False
 
+    @property
+    def matchade_datum_str(self) -> str:
+        datum_list = sorted(list({t.trans_datum for t in self.transaktioner if t.trans_datum}))
+        if not datum_list:
+            return ""
+        if len(datum_list) == 1:
+            return datum_list[0].strftime("%Y-%m-%d")
+        return f"{datum_list[0].strftime('%Y-%m-%d')} till {datum_list[-1].strftime('%Y-%m-%d')}"
+
+    @property
+    def dedupade_meddelanden(self) -> list[tuple[str, int]]:
+        c = Counter(t.meddelande.strip().capitalize() if t.meddelande else "" for t in self.transaktioner)
+        return sorted(c.items(), key=lambda x: (x[0] == "", x[0]))
 
 def _f_nyckel(forsamling, datum, andamal) -> str:
     return f"F|{forsamling}|{datum:%Y-%m-%d}|{andamal}"

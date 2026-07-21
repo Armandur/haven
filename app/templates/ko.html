@@ -15,9 +15,13 @@
 
   <div class="hv-meta">
     {% if p.andamal %}Ändamål: <strong>{{ p.andamal }}</strong> · {% endif %}
-    {% if p.datum %}Datum: {{ p.datum }} · {% endif %}
+    {% if p.datum %}Tillfälle: {{ p.datum }} · {% endif %}
     {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
     {% if p.kraver_manuell_andamal %} · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>{% endif %}
+    {% if p.matchade_datum_str %}
+    <br>Transaktionsdatum: {{ p.matchade_datum_str }}
+    {% endif %}
+
   </div>
 
   {% if p.delposter %}
@@ -30,6 +34,33 @@
     </tbody>
   </table>
   <p class="hv-swish">Registreras på ett gemensamt tillfälle i KOB - alla församlingars belopp matas in samtidigt.</p>
+  {% endif %}
+
+  {% if p.delposter and p.grupp == 'R/S' %}
+    <strong>Meddelanden:</strong>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; margin-bottom: 1rem;">
+    {% for d in p.delposter %}
+      {% if d.dedupade_meddelanden %}
+      <table class="hv-radtabell" style="width: auto; margin: 0;">
+        <thead><tr><th>{{ d.forsamling }}</th><th style="text-align: center;">Antal</th></tr></thead>
+        <tbody>
+          {% for m, count in d.dedupade_meddelanden %}
+          <tr><td class="hv-swish" style="padding: 0.2rem 0.5rem;">{{ m if m else '<em>(Tomt)</em>' | safe }}</td><td style="padding: 0.2rem 0.5rem; text-align: right;">{{ count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    {% endfor %}
+    </div>
+  {% elif p.dedupade_meddelanden %}
+    <table class="hv-radtabell" style="width: auto; margin-top: 0.5rem; margin-bottom: 1rem;">
+      <thead><tr><th>Meddelanden</th><th style="text-align: center;">Antal</th></tr></thead>
+      <tbody>
+        {% for m, count in p.dedupade_meddelanden %}
+        <tr><td class="hv-swish" style="padding: 0.2rem 0.5rem;">{{ m if m else '<em>(Tomt)</em>' | safe }}</td><td style="padding: 0.2rem 0.5rem; text-align: right;">{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   {% endif %}
 
   {% if p.transaktioner %}
