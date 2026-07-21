@@ -98,6 +98,10 @@
     var markantal = box.querySelector(".hv-markantal");
     var marksumma = box.querySelector(".hv-marksumma");
     var allC = box.querySelector(".hv-markera-alla");
+    var datumInput = box.querySelector("input[name='ny_tillfallesdatum']");
+    if (datumInput) {
+      datumInput.addEventListener("input", function() { datumInput.dataset.manuell = "true"; });
+    }
 
     function synlig(r) {
       var d = r.dataset.datum;
@@ -108,16 +112,31 @@
     }
     function uppdatera() {
       var vis = 0, mark = 0, summa = 0;
+      var forstaDatum = null;
       rows.forEach(function (r) {
         var s = synlig(r);
         r.hidden = !s;
         if (s) vis++;
         var cb = r.querySelector(".hv-valj");
-        if (cb.checked) { mark++; summa += parseFloat(r.dataset.belopp) || 0; }
+        if (cb.checked) { 
+          mark++; 
+          summa += parseFloat(r.dataset.belopp) || 0; 
+          if (!forstaDatum) forstaDatum = r.dataset.datum;
+        }
       });
       antal.textContent = vis;
       markantal.textContent = mark;
       marksumma.textContent = fmt(summa);
+      
+      if (datumInput && forstaDatum && !datumInput.dataset.manuell) {
+        datumInput.value = forstaDatum;
+      }
+      
+      var form = box.querySelector("form");
+      if (form) {
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = (mark === 0);
+      }
     }
     [fran, till, medd].forEach(function (el) { el.addEventListener("input", uppdatera); });
     table.addEventListener("change", function (e) {
