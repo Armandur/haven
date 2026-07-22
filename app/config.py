@@ -41,11 +41,37 @@ class Kollekttyp(str, Enum):
 
     @property
     def kob_namn(self) -> str:
-        return {
-            "F": "Församlingskollekt",
-            "R": "Rikskollekt",
-            "S": "Stiftskollekt",
-        }[self.value]
+        return kollekttyp_namn(self.value)
+
+
+# KOB:s kollekttypsetiketter per kod. "N" ar ingen kalenderbokstav utan en
+# harledd subtyp: en F-kollekt vars andamal ar en nationell organisation
+# (Act/SKUT) registreras i KOB som "Forskollekt nationell org" (subtyp 5),
+# inte som vanlig Forsamlingskollekt. Se ar_nationell_org() nedan.
+_KOLLEKTTYP_NAMN: dict[str, str] = {
+    "F": "Församlingskollekt",
+    "R": "Rikskollekt",
+    "S": "Stiftskollekt",
+    "N": "Förskollekt nationell org",
+}
+
+
+def kollekttyp_namn(kod: str) -> str:
+    return _KOLLEKTTYP_NAMN.get(kod, kod)
+
+
+# Andamal som vid en F-kollekt registreras som "Forskollekt nationell org".
+# Matchas normaliserat (gemener, delstrang). Bara Act Svenska kyrkan och
+# Svenska kyrkan i utlandet (SKUT) - ovriga F-andamal forblir vanlig F.
+NATIONELL_ORG_ANDAMAL: tuple[str, ...] = (
+    "act svenska kyrkan",
+    "svenska kyrkan i utlandet",
+)
+
+
+def ar_nationell_org(andamal: str) -> bool:
+    a = (andamal or "").strip().lower()
+    return any(n in a for n in NATIONELL_ORG_ANDAMAL)
 
 
 class Registreringssatt(str, Enum):

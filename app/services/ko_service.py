@@ -12,7 +12,7 @@ from decimal import Decimal
 from pathlib import Path
 from collections import Counter
 
-from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp
+from app.config import DATA_DIR, INBETALNINGSMETOD, KALENDER_FIL, Kollekttyp, kollekttyp_namn
 from app.core.aggregate import Underlag
 from app.core.models import Transaktion
 from app.core.pipeline import Pipelineresultat, bearbeta, las_rapport
@@ -97,7 +97,8 @@ def bygg_ko(underlag: Underlag) -> list[Kopost]:
     for p in underlag.f_poster:
         nyckel = _f_nyckel(p.forsamling, p.datum, p.andamal)
         poster.append(Kopost(
-            nyckel=nyckel, grupp="F", typ_kod="F", typ_etikett=Kollekttyp.F.kob_namn,
+            nyckel=nyckel, grupp="F", typ_kod=p.kollekttyp,
+            typ_etikett=kollekttyp_namn(p.kollekttyp),
             rubrik=f"{p.forsamling} - {p.datum:%Y-%m-%d}",
             belopp=p.belopp, antal=p.antal, forsamling=p.forsamling,
             datum=p.datum, andamal=p.andamal, bekraftad=nyckel in bekr,
@@ -277,7 +278,7 @@ def bygg_export(res: Pipelineresultat) -> dict:
 
     for p in u.f_poster:
         poster.append({
-            "typ": "F", "kob_flode": "kollekt", "forsamling": p.forsamling,
+            "typ": p.kollekttyp, "kob_flode": "kollekt", "forsamling": p.forsamling,
             "kollektstalle": None, "datum": p.datum.isoformat(),
             "andamal": p.andamal, "belopp": str(p.belopp),
             "inbetalningsmetod": INBETALNINGSMETOD,

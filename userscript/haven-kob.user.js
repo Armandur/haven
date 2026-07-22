@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Håven KOB-förifyllnad
 // @namespace    haven.svenskakyrkan
-// @version      0.5.1
+// @version      0.5.2
 // @description  Läser Håvens JSON-export och förifyller KOB (F-komplettering först). Ingen KOB-data lämnar webbläsaren.
 // @author       Håven
 // @updateURL    http://ubuntu-ai:8003/kob-userscript.user.js
@@ -37,11 +37,17 @@
   // ---------------------------------------------------------------------------
   // Konstanter
   // ---------------------------------------------------------------------------
-  const SCRIPT_VERSION = '0.5.1';   // håll i synk med @version
+  const SCRIPT_VERSION = '0.5.2';   // håll i synk med @version
   const STATE_KEY = 'haven_kob_state';
   const HAVEN_URL_KEY = 'haven_export_url';
   const HAVEN_URL_DEFAULT = 'http://ubuntu-ai:8003/ko/export.json';
-  const KOLLEKTTYP_TEXT = { F: 'Församlingskollekt', R: 'Rikskollekt', S: 'Stiftskollekt' };
+  const KOLLEKTTYP_TEXT = {
+    F: 'Församlingskollekt', R: 'Rikskollekt', S: 'Stiftskollekt',
+    N: 'Förskollekt nationell org',   // F-kollekt till Act/SKUT (subtyp av F)
+  };
+  // Poster som körs via F-flödet (sök + komplettera per församling). "N" är en
+  // F-kollekt till nationell org (Act/SKUT) - samma flöde, annan kollekttyp.
+  const F_FLODE_TYPER = ['F', 'N'];
 
   // GM-API kan saknas beroende på userscript-manager/grants.
   const harGM = typeof GM_xmlhttpRequest !== 'undefined';
@@ -303,7 +309,7 @@
     }
     const state = laddaState();
     const u = state && state.underlag;
-    const fPoster = u ? u.poster.map((p, i) => ({ p, i })).filter(x => x.p.typ === 'F') : [];
+    const fPoster = u ? u.poster.map((p, i) => ({ p, i })).filter(x => F_FLODE_TYPER.includes(x.p.typ)) : [];
 
     panelEl.innerHTML = '';
     const h = document.createElement('h3');
@@ -475,7 +481,7 @@
     const state = laddaState();
     if (!state || !state.underlag) return;
     const post = state.underlag.poster[index];
-    if (post.typ !== 'F') { alert('Endast F-poster stöds i denna version.'); return; }
+    if (!F_FLODE_TYPER.includes(post.typ)) { alert('Endast F-poster stöds i denna version.'); return; }
     uppdateraState({ index, step: 'sok', active: true });
     logga(`Startar F #${index + 1}: ${post.forsamling} ${post.datum} ${post.andamal}`);
     // Navigera till sökvyn (formuläret fylls + submitas när sidan laddat).

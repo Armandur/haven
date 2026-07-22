@@ -53,6 +53,13 @@ data/                  # in-filer (gitignorat, givarmeddelanden = personuppgifte
   gudstjänsten folas in på gudstjänstens tillfälle. Se `aggregate.py`.
 - **KOB-avstämning: bara `Swish 1`-rader.** KOB innehåller även Kontant-rader
   för samma tillfälle; endast Swish 1 jämförs mot Swish-rapporten.
+- **Fyra kollekttyper, inte tre.** Kalendern kodar F/R/S, men KOB har en fjärde
+  söktyp "Förskollekt nationell org" (= Församlingskollekt nationell organisation,
+  subtyp 5). En F-kollekt vars ändamål är Act Svenska kyrkan / Svenska kyrkan i
+  utlandet ska sökas som denna, inte som vanlig Församlingskollekt. R-kollekt till
+  Act förblir Rikskollekt. Härleds vid aggregering via `config.ar_nationell_org`;
+  FPost.kollekttyp blir `"N"` (ingen kalenderbokstav, ingen ny Kollekttyp-enum -
+  F/R/S-grenarna i `aggregate.py` rörs inte). Se TASK-228.
 - **KOB-datum är Excel-serienummer** och datan ligger utspridd över flera blad.
 - **Swish-rubrik hittas dynamiskt** via "Bokföringsdatum"; summerings-, tom- och
   totalrader saknar bokföringsdatum och filtreras på det.

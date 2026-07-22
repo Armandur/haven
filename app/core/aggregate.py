@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-from app.config import Kategori, Kollekttyp, Registreringssatt
+from app.config import Kategori, Kollekttyp, Registreringssatt, ar_nationell_org
 from app.core.models import Transaktion
 from app.core.regler import SarskildPost, tillhor_sarskild
 
@@ -144,7 +144,11 @@ def bygg_underlag(transaktioner: list[Transaktion], period: str,
             u.omatchade.append(t)
 
     for (fors, datum, andamal), txs in f_grupp.items():
-        u.f_poster.append(FPost(fors, datum, andamal, _summa(txs), len(txs), txs))
+        # F-kollekt till Act/SKUT registreras i KOB som "Forskollekt nationell
+        # org" (subtyp av forsamlingskollekt), inte som vanlig F. Ovriga F oror.
+        typ = "N" if ar_nationell_org(andamal) else "F"
+        u.f_poster.append(
+            FPost(fors, datum, andamal, _summa(txs), len(txs), txs, kollekttyp=typ))
     u.f_poster.sort(key=lambda p: (p.forsamling, p.datum, p.andamal))
 
     for (typ, andamal, datum), per_fors in rs_grupp.items():

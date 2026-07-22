@@ -106,9 +106,11 @@ p.hv-badge { white-space: normal; }
 .hv-badge.varning { background: var(--hv-varning-bg); color: var(--hv-varning); }
 
 /* Genomgaende fargkod for kollekttyp/insamling:
-   F = gron (forsamling), S = gul (stift), R = rod (riks), gava = bla (insamling). */
+   F = gron (forsamling), N = teal (F till nationell org, Act/SKUT),
+   S = gul (stift), R = rod (riks), gava = bla (insamling). */
 :root {
   --hv-typ-f: #2e7d32;   --hv-typ-f-bg: #e6f4ea;
+  --hv-typ-n: #00695c;   --hv-typ-n-bg: #ddf1ee;
   --hv-typ-s: #8a6d00;   --hv-typ-s-bg: #fbf1c7;
   --hv-typ-r: #b3261e;   --hv-typ-r-bg: #fdecea;
   --hv-typ-gava: #1558b0; --hv-typ-gava-bg: #e7f0fb;
@@ -116,6 +118,7 @@ p.hv-badge { white-space: normal; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --hv-typ-f: #7ecb8a;   --hv-typ-f-bg: #16351f;
+    --hv-typ-n: #5fd0c2;   --hv-typ-n-bg: #0e3330;
     --hv-typ-s: #e2c65a;   --hv-typ-s-bg: #38300f;
     --hv-typ-r: #f0938c;   --hv-typ-r-bg: #3a1614;
     --hv-typ-gava: #86b4f0; --hv-typ-gava-bg: #12233d;
@@ -123,11 +126,13 @@ p.hv-badge { white-space: normal; }
 }
 :root[data-theme="dark"] {
   --hv-typ-f: #7ecb8a;   --hv-typ-f-bg: #16351f;
+  --hv-typ-n: #5fd0c2;   --hv-typ-n-bg: #0e3330;
   --hv-typ-s: #e2c65a;   --hv-typ-s-bg: #38300f;
   --hv-typ-r: #f0938c;   --hv-typ-r-bg: #3a1614;
   --hv-typ-gava: #86b4f0; --hv-typ-gava-bg: #12233d;
 }
 .hv-badge.typ-f { background: var(--hv-typ-f-bg); color: var(--hv-typ-f); }
+.hv-badge.typ-n { background: var(--hv-typ-n-bg); color: var(--hv-typ-n); }
 .hv-badge.typ-s { background: var(--hv-typ-s-bg); color: var(--hv-typ-s); }
 .hv-badge.typ-r { background: var(--hv-typ-r-bg); color: var(--hv-typ-r); }
 .hv-badge.typ-gava { background: var(--hv-typ-gava-bg); color: var(--hv-typ-gava); }
