@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from app.config import DATA_DIR, KOB_INSAMLING_GLOB, KOB_KOLLEKT_GLOB
@@ -38,19 +39,34 @@ def kor_avstamning(res: Pipelineresultat) -> Avstamningsresultat:
     insamlingsfil = _senaste(KOB_INSAMLING_GLOB)
     saknade: list[str] = []
     rapport_datum = [t.trans_datum for t in res.rapport.transaktioner]
-    rapport_intervall = (
-        Datumintervall(min(rapport_datum), max(rapport_datum)) if rapport_datum else None
-    )
+    rapport_intervall_text = getattr(res.rapport, "datumintervall", "")
+    if rapport_intervall_text:
+        fran_text, till_text = rapport_intervall_text.split(" - ", maxsplit=1)
+        rapport_intervall = Datumintervall(
+            date.fromisoformat(fran_text), date.fromisoformat(till_text),
+        )
+    else:
+        rapport_intervall = (
+            Datumintervall(min(rapport_datum), max(rapport_datum)) if rapport_datum else None
+        )
 
     kollekt = None
     if kollektfil:
-        kollekt = avstam_kollekt(res.rapport.transaktioner, las_kob_kollekt(kollektfil))
+        kollekt = avstam_kollekt(
+            res.rapport.transaktioner,
+            las_kob_kollekt(kollektfil),
+            rapport_intervall,
+        )
     else:
         saknade.append(f"KOB-kollektexport ({KOB_KOLLEKT_GLOB})")
 
     gava = None
     if insamlingsfil:
-        gava = avstam_gava(res.underlag, las_kob_insamling(insamlingsfil))
+        gava = avstam_gava(
+            res.underlag,
+            las_kob_insamling(insamlingsfil),
+            rapport_intervall,
+        )
     else:
         saknade.append(f"KOB-insamlingsexport ({KOB_INSAMLING_GLOB})")
 

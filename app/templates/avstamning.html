@@ -22,6 +22,11 @@
   Hämta om exporten med ett större datumintervall.
 </p></article>
 {% endif %}
+{% if avst.kollekt.utanfor_period_antal > 0 %}
+<p class="hv-meta">
+  <span class="hv-badge varning">{{ avst.kollekt.utanfor_period_antal }} KOB-rader ({{ avst.kollekt.utanfor_period_summa|kr }} kr) ligger utanför rapportens period och visas inte - annan månads export?</span>
+</p>
+{% endif %}
 <div class="grid">
   <div><small>Swish totalt</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.swish_total|kr }} kr</strong></div>
   <div><small>KOB totalt (Swish 1)</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.kob_total|kr }} kr</strong></div>
@@ -85,6 +90,11 @@
   men KOB-insamlingsexporten täcker {{ avst.gava.kob_intervall.fran }} - {{ avst.gava.kob_intervall.till }}.
   Hämta om exporten med ett större datumintervall.
 </p></article>
+{% endif %}
+{% if avst.gava.utanfor_period_antal > 0 %}
+<p class="hv-meta">
+  <span class="hv-badge varning">{{ avst.gava.utanfor_period_antal }} KOB-rader ({{ avst.gava.utanfor_period_summa|kr }} kr) ligger utanför rapportens period och visas inte - annan månads export?</span>
+</p>
 {% endif %}
 <figure><table>
   <thead><tr>

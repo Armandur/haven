@@ -81,6 +81,8 @@ class ForsamlingAvstamning:
 class KollektAvstamning:
     forsamlingar: list[ForsamlingAvstamning] = field(default_factory=list)
     kob_intervall: Datumintervall | None = None
+    utanfor_period_antal: int = 0
+    utanfor_period_summa: Decimal = Decimal("0.00")
 
     @property
     def swish_total(self) -> Decimal:
@@ -102,8 +104,11 @@ def _typ_bokstav(typ_set: set) -> str:
     return ""
 
 
-def avstam_kollekt(transaktioner: list[Transaktion],
-                   kob_rader: list[KobKollektrad]) -> KollektAvstamning:
+def avstam_kollekt(
+    transaktioner: list[Transaktion],
+    kob_rader: list[KobKollektrad],
+    rapport_intervall: Datumintervall | None = None,
+) -> KollektAvstamning:
     kob_datum = [r.tillfallesdatum for r in kob_rader if r.tillfallesdatum is not None]
     kob_intervall = Datumintervall(min(kob_datum), max(kob_datum)) if kob_datum else None
 
@@ -124,8 +129,24 @@ def avstam_kollekt(transaktioner: list[Transaktion],
     # KOB-sidan: bara Swish 1-rader, nyckel (forsamling, tillfallesdatum).
     kob: dict[tuple, dict] = defaultdict(
         lambda: {"belopp": Decimal("0.00"), "andamal": set(), "typ": set()})
+    utanfor_period_antal = 0
+    utanfor_period_summa = Decimal("0.00")
     for r in kob_rader:
         if r.inbetalningsmetod.strip() != SWISH_METOD:
+            continue
+        # Manadsskiftesgransfall: sista sondagens tillfalle betalas ofta via
+        # Swish men bokfors i nasta manads rapport - da har swish-sidan
+        # tillfallet trots att det ligger fore rapportintervallet. Filtrera
+        # darfor bara KOB-rader som BADE ar utanfor perioden och saknar
+        # motsvarande swish-tillfalle.
+        if (
+            rapport_intervall is not None
+            and r.tillfallesdatum is not None
+            and not rapport_intervall.innehaller(r.tillfallesdatum)
+            and (r.forsamling, r.tillfallesdatum) not in swish
+        ):
+            utanfor_period_antal += 1
+            utanfor_period_summa += r.belopp
             continue
         d = kob[(r.forsamling, r.tillfallesdatum)]
         d["belopp"] += r.belopp
@@ -135,7 +156,11 @@ def avstam_kollekt(transaktioner: list[Transaktion],
             d["typ"].add(r.kollekttyp)
 
     forsamlingar = sorted({f for f, _ in swish} | {f for f, _ in kob})
-    resultat = KollektAvstamning(kob_intervall=kob_intervall)
+    resultat = KollektAvstamning(
+        kob_intervall=kob_intervall,
+        utanfor_period_antal=utanfor_period_antal,
+        utanfor_period_summa=utanfor_period_summa,
+    )
     for fors in forsamlingar:
         fa = ForsamlingAvstamning(forsamling=fors)
         datum_nycklar = sorted(
@@ -211,6 +236,8 @@ class GavaAvstamning:
     rader: list[GavaAvstamRad] = field(default_factory=list)
     omappade: list[KobGavaDetalj] = field(default_factory=list)
     kob_intervall: Datumintervall | None = None
+    utanfor_period_antal: int = 0
+    utanfor_period_summa: Decimal = Decimal("0.00")
 
     @property
     def antal_diffar(self) -> int:
@@ -225,7 +252,11 @@ def _matcha_verksamhet(rad: KobInsamlingsrad) -> str | None:
     return None
 
 
-def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAvstamning:
+def avstam_gava(
+    underlag: Underlag,
+    kob_rader: list[KobInsamlingsrad],
+    rapport_intervall: Datumintervall | None = None,
+) -> GavaAvstamning:
     kob_datum = [r.datum for r in kob_rader if r.datum is not None]
     kob_intervall = Datumintervall(min(kob_datum), max(kob_datum)) if kob_datum else None
 
@@ -241,8 +272,18 @@ def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAv
     kob: dict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
     detaljer: dict[str, list[KobGavaDetalj]] = defaultdict(list)
     omappade: list[KobGavaDetalj] = []
+    utanfor_period_antal = 0
+    utanfor_period_summa = Decimal("0.00")
     for r in kob_rader:
         if r.inbetalningsmetod.strip() != SWISH_METOD:
+            continue
+        if (
+            rapport_intervall is not None
+            and r.datum is not None
+            and not rapport_intervall.innehaller(r.datum)
+        ):
+            utanfor_period_antal += 1
+            utanfor_period_summa += r.belopp
             continue
         verksamhet = _matcha_verksamhet(r)
         detalj = KobGavaDetalj(beskrivning=r.beskrivning or r.mottagare, belopp=r.belopp)
@@ -252,7 +293,12 @@ def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAv
         kob[verksamhet] += r.belopp
         detaljer[verksamhet].append(detalj)
 
-    resultat = GavaAvstamning(omappade=omappade, kob_intervall=kob_intervall)
+    resultat = GavaAvstamning(
+        omappade=omappade,
+        kob_intervall=kob_intervall,
+        utanfor_period_antal=utanfor_period_antal,
+        utanfor_period_summa=utanfor_period_summa,
+    )
     for verksamhet in sorted(set(swish) | set(kob)):
         s, k = swish[verksamhet], kob[verksamhet]
         diff = s - k

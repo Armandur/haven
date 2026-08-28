@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -49,6 +50,121 @@ def _kob_kollekt(datum: date) -> KobKollektrad:
         belopp=Decimal("0.00"),
         kalla="test.xls",
     )
+
+
+def _kob_insamling(datum: date | None, belopp: str = "100.00") -> KobInsamlingsrad:
+    return KobInsamlingsrad(
+        forsamling="",
+        mottagare="ACT Svenska kyrkan",
+        datum=datum,
+        insamlingstyp="",
+        beskrivning="ACT Svenska kyrkan",
+        oronmarkning="",
+        notering="",
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal(belopp),
+        kalla="test.xls",
+    )
+
+
+def test_kollektrader_utanför_rapportperioden_summeras_och_filtreras():
+    inom = replace(
+        _kob_kollekt(date(2026, 5, 17)),
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("100.00"),
+    )
+    utanfor = replace(
+        _kob_kollekt(date(2026, 6, 7)),
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("250.00"),
+    )
+
+    avst = avstam_kollekt(
+        [_transaktion(date(2026, 5, 17))],
+        [inom, utanfor],
+        Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
+    )
+
+    assert avst.kob_total == Decimal("100.00")
+    assert avst.antal_diffar == 0
+    assert avst.utanfor_period_antal == 1
+    assert avst.utanfor_period_summa == Decimal("250.00")
+    assert all(r.datum != date(2026, 6, 7) for f in avst.forsamlingar for r in f.rader)
+
+
+def test_kollektrad_for_manadsskiftestillfalle_behalls_nar_swish_har_tillfallet():
+    """Sista sondagens tillfalle betalas via Swish men bokfors i nasta manads
+    rapport - KOB-raden ska da jamforas, inte filtreras som annan manad."""
+    kob = replace(
+        _kob_kollekt(date(2026, 5, 31)),
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("100.00"),
+    )
+
+    avst = avstam_kollekt(
+        [_transaktion(date(2026, 5, 31))],   # matchad mot 31 maj-tillfallet
+        [kob],
+        Datumintervall(date(2026, 6, 1), date(2026, 6, 30)),
+    )
+
+    assert avst.utanfor_period_antal == 0
+    rad = next(r for f in avst.forsamlingar for r in f.rader)
+    assert rad.datum == date(2026, 5, 31)
+    assert rad.swish == rad.kob == Decimal("100.00")
+    assert rad.status == "ok"
+
+
+def test_kollektrad_utan_datum_och_utan_intervall_behandlas_som_tidigare():
+    utan_datum = replace(
+        _kob_kollekt(date(2026, 5, 17)),
+        tillfallesdatum=None,
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("40.00"),
+    )
+    utanfor = replace(
+        _kob_kollekt(date(2026, 6, 7)),
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("60.00"),
+    )
+
+    filtrerad = avstam_kollekt(
+        [], [utan_datum, utanfor], Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
+    )
+    ofiltrerad = avstam_kollekt([], [utan_datum, utanfor])
+
+    assert filtrerad.kob_total == Decimal("40.00")
+    assert any(r.datum is None for f in filtrerad.forsamlingar for r in f.rader)
+    assert ofiltrerad.kob_total == Decimal("100.00")
+    assert ofiltrerad.utanfor_period_antal == 0
+
+
+def test_insamlingsrader_utanför_rapportperioden_summeras_och_filtreras():
+    avst = avstam_gava(
+        Underlag(period="2026-05"),
+        [
+            _kob_insamling(date(2026, 5, 17), "100.00"),
+            _kob_insamling(date(2026, 6, 7), "250.00"),
+            _kob_insamling(None, "40.00"),
+        ],
+        Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
+    )
+
+    act = next(r for r in avst.rader if r.verksamhet == "ACT Svenska Kyrkan")
+    assert act.kob == Decimal("140.00")
+    assert len(act.kob_detaljer) == 2
+    assert avst.utanfor_period_antal == 1
+    assert avst.utanfor_period_summa == Decimal("250.00")
+
+
+def test_insamlingsrader_utan_rapportintervall_filtreras_inte():
+    avst = avstam_gava(
+        Underlag(period="2026-05"),
+        [_kob_insamling(date(2026, 6, 7), "250.00")],
+    )
+
+    act = next(r for r in avst.rader if r.verksamhet == "ACT Svenska Kyrkan")
+    assert act.kob == Decimal("250.00")
+    assert avst.utanfor_period_antal == 0
 
 
 def test_saknad_kollekt_utanfor_exportintervall_far_tydlig_orsak():
@@ -113,6 +229,27 @@ def test_rapportintervall_harleds_fran_transaktionsdatum(monkeypatch):
     assert avst.rapport_intervall == Datumintervall(date(2026, 5, 2), date(2026, 6, 1))
 
 
+def test_rapportens_uttryckliga_datumintervall_anvands_fore_transaktionsdatumen(
+    monkeypatch,
+):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr("app.services.avstamning_service._senaste", lambda glob: None)
+    res = SimpleNamespace(
+        rapport=SimpleNamespace(
+            datumintervall="2026-05-01 - 2026-05-31",
+            transaktioner=[_transaktion(date(2026, 5, 29))],
+        ),
+        underlag=Underlag(period="2026-05"),
+    )
+
+    avst = kor_avstamning(res)
+
+    assert avst.rapport_intervall == Datumintervall(
+        date(2026, 5, 1), date(2026, 5, 31),
+    )
+
+
 def test_template_visar_bada_intervallvarningarna():
     from types import SimpleNamespace
 
@@ -120,9 +257,13 @@ def test_template_visar_bada_intervallvarningarna():
     avst = Avstamningsresultat(
         kollekt=KollektAvstamning(
             kob_intervall=Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
+            utanfor_period_antal=2,
+            utanfor_period_summa=Decimal("350.00"),
         ),
         gava=GavaAvstamning(
             kob_intervall=Datumintervall(date(2026, 5, 2), date(2026, 5, 30)),
+            utanfor_period_antal=3,
+            utanfor_period_summa=Decimal("475.00"),
         ),
         kob_kollekt_fil="kollekt.xls",
         kob_insamling_fil="insamling.xls",
@@ -140,6 +281,8 @@ def test_template_visar_bada_intervallvarningarna():
     assert "KOB-kollektexporten täcker 2026-05-01 - 2026-05-31" in html
     assert "KOB-insamlingsexporten täcker 2026-05-02 - 2026-05-30" in html
     assert html.count("Hämta om exporten med ett större datumintervall.") == 2
+    assert "2 KOB-rader (350,00 kr) ligger utanför rapportens period" in html
+    assert "3 KOB-rader (475,00 kr) ligger utanför rapportens period" in html
 
 
 def test_ingen_varning_nar_exporten_bara_borjar_senare():
