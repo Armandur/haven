@@ -64,8 +64,8 @@
           <td style="text-align:right">{% if r.diff != 0 %}<span class="hv-diff-varning">{{ r.diff|kr }}</span>{% else %}0,00{% endif %}</td>
           <td>
             {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
-            {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">notis</span>
-            {% else %}<span class="hv-badge varning" title="{{ r.orsak }}">diff</span>{% endif %}
+            {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">Notis</span>
+            {% else %}<span class="hv-badge varning" title="{{ r.orsak }}">Diff</span>{% endif %}
             {% if r.orsak %}<span class="hv-swish"> {{ r.orsak }}</span>{% endif %}
           </td>
         </tr>
@@ -102,7 +102,7 @@
       <td style="text-align:right">{% if r.diff != 0 %}<strong>{{ r.diff|kr }}</strong>{% else %}0,00{% endif %}</td>
       <td>
         {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
-        {% else %}<span class="hv-badge varning">diff</span> <span class="hv-swish">{{ r.orsak }}</span>{% endif %}
+        {% else %}<span class="hv-badge varning">Diff</span> <span class="hv-swish">{{ r.orsak }}</span>{% endif %}
       </td>
     </tr>
     {% endfor %}
