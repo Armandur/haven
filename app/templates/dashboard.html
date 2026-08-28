@@ -56,6 +56,12 @@ Servicebyrån kan ha skickat en ny version. Se över radbaserade justeringar
 eftersom de bygger på transaktions-ID som kan ha ändrats.</article>
 {% endif %}
 
+{% for o in overlapp %}
+<article><p class="hv-badge varning">
+  Rapporten delar {{ o.antal }} transaktioner med {{ o.filnamn }} - risk för dubbelregistrering.
+</p></article>
+{% endfor %}
+
 {% if not vy %}
   <article>
     <p class="hv-tomt">Ingen Swish-rapport hittades i data-katalogen. Lägg en .xlsx-fil i <code>data/</code>.</p>

@@ -147,6 +147,7 @@ class RapportRad(Base):
     forst_importerad: Mapped[str] = mapped_column(String, default="")
     senast_sedd: Mapped[str] = mapped_column(String, default="")
     andrad: Mapped[int] = mapped_column(default=0)   # latchad flagga: innehall har andrats
+    tx_ids: Mapped[str] = mapped_column(String, default="")
 
 
 engine = create_engine(f"sqlite:///{DB_PATH}", future=True)
@@ -180,6 +181,7 @@ def _migrera() -> None:
     tillagg = {
         "overstyrning": [("tx_ids", "TEXT DEFAULT ''")],
         "sarskild_post": [("tx_ids", "TEXT DEFAULT ''")],
+        "rapport": [("tx_ids", "TEXT DEFAULT ''")],
         "regelhistorik": [
             ("scope", "TEXT DEFAULT ''"), ("tx_ids", "TEXT DEFAULT ''"),
             ("meddelande_filter", "TEXT DEFAULT ''"),
@@ -370,21 +372,30 @@ class Rapportpost:
     forst_importerad: str
     senast_sedd: str
     andrad: bool
+    tx_ids: frozenset[str]
+
+
+@dataclass(frozen=True)
+class Rapportoverlapp:
+    filnamn: str
+    antal: int
 
 
 def registrera_rapport(filnamn: str, period: str, innehalls_hash: str,
-                       antal_tx: int, total: str) -> bool:
+                       antal_tx: int, total: str,
+                       tx_ids: set[str] | frozenset[str] | None = None) -> bool:
     """Upsert pa filnamn. Returnerar True om innehallet andrats sedan forra gangen
     (samma filnamn men ny hash) - da bor tx_id-baserade regler ses over."""
     now = _now()
     andrad_nu = False
+    tx_ids_text = ",".join(sorted(tx_ids)) if tx_ids is not None else ""
     with Session(engine) as s:
         rad = s.get(RapportRad, filnamn)
         if rad is None:
             s.add(RapportRad(
                 filnamn=filnamn, period=period, innehalls_hash=innehalls_hash,
                 antal_tx=antal_tx, total=total, forst_importerad=now,
-                senast_sedd=now, andrad=0))
+                senast_sedd=now, andrad=0, tx_ids=tx_ids_text))
         else:
             if rad.innehalls_hash and rad.innehalls_hash != innehalls_hash:
                 rad.andrad = 1
@@ -394,6 +405,8 @@ def registrera_rapport(filnamn: str, period: str, innehalls_hash: str,
             rad.antal_tx = antal_tx
             rad.total = total
             rad.senast_sedd = now
+            if tx_ids is not None:
+                rad.tx_ids = tx_ids_text
         s.commit()
     return andrad_nu
 
@@ -406,7 +419,7 @@ def las_rapporter() -> list[Rapportpost]:
                 filnamn=r.filnamn, period=r.period, antal_tx=r.antal_tx,
                 total=Decimal(r.total or "0.00"),
                 forst_importerad=r.forst_importerad, senast_sedd=r.senast_sedd,
-                andrad=bool(r.andrad),
+                andrad=bool(r.andrad), tx_ids=_ptxids(r.tx_ids) or frozenset(),
             ) for r in rader
         ]
 
@@ -415,6 +428,24 @@ def rapport_andrad(filnamn: str) -> bool:
     with Session(engine) as s:
         rad = s.get(RapportRad, filnamn)
         return bool(rad and rad.andrad)
+
+
+def rapport_overlapp(filnamn: str) -> list[Rapportoverlapp]:
+    with Session(engine) as s:
+        vald = s.get(RapportRad, filnamn)
+        valda_ids = _ptxids(vald.tx_ids) if vald else None
+        if not valda_ids:
+            return []
+        ovriga = s.scalars(
+            select(RapportRad).where(RapportRad.filnamn != filnamn)
+        ).all()
+
+    resultat = []
+    for rad in ovriga:
+        gemensamma = valda_ids & (_ptxids(rad.tx_ids) or frozenset())
+        if gemensamma:
+            resultat.append(Rapportoverlapp(rad.filnamn, len(gemensamma)))
+    return sorted(resultat, key=lambda o: (-o.antal, o.filnamn))
 
 
 # --- Regelhistorik ----------------------------------------------------------

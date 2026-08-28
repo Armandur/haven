@@ -26,6 +26,7 @@ from app.database import (
     las_rapporter,
     las_sarskilda,
     rapport_andrad,
+    rapport_overlapp,
     skapa_overstyrning,
     skapa_sarskild,
     spara_forsamling_alias,
@@ -83,6 +84,7 @@ def dashboard(request: Request):
     return templates.TemplateResponse(request, "dashboard.html", {
         "vy": vy, "rapporter": rapporter, "vald": fil.name, "total": total,
         "registrerade": las_rapporter(), "andrad": rapport_andrad(fil.name),
+        "overlapp": rapport_overlapp(fil.name),
     })
 
 

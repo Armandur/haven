@@ -335,5 +335,11 @@ def _registrera(sokvag: Path, rapport) -> None:
     """Registrera rapporten i registret (idempotent, upsert pa filnamn)."""
     filhash = hashlib.sha256(sokvag.read_bytes()).hexdigest()
     total = sum((t.belopp for t in rapport.transaktioner), Decimal("0.00"))
-    registrera_rapport(rapport.filnamn, rapport.period, filhash,
-                       len(rapport.transaktioner), str(total))
+    registrera_rapport(
+        rapport.filnamn,
+        rapport.period,
+        filhash,
+        len(rapport.transaktioner),
+        str(total),
+        {t.tx_id for t in rapport.transaktioner},
+    )
