@@ -207,6 +207,62 @@ Att redigera en ändamålsöverstyrning verkar inte fungera, vid tryck på Ändr
 
 ---
 
+## [P3][done] [haven] Flagga avvikande riks-/stiftskollektdagar mellan församlingar, med kvittering
+
+## Context
+Riks- och stiftskollekter är gemensamma - alla församlingsblad ska normalt ha samma datum. En församling kan dock ha beviljat byte av kollektdag (verkligt fall: Hemsö tar rikskollekter på lördagar, t.ex. R Act 20 juni när övriga har 21 juni). Idag syns en avvikelse ingenstans - handläggaren behöver en påminnelse att kontrollera om avvikelsen är ett beslutat byte, och kunna kvittera bekräftade byten så de inte tjatar varje månad.
+
+## Acceptance criteria
+- [ ] En kontroll grupperar kalenderns R- och S-rader per (typ, normaliserat ändamål) och klustrar datum som ligger nära varandra (gap <= 10 dagar) till samma tillfälle; inom ett kluster flaggas församlingar vars datum avviker från majoritetens.
+- [ ] Kalendervyn visar avvikelserna i en notisruta: typ, ändamål, majoritetsdatum med antal församlingar, avvikande församling + datum, och en Kvittera-knapp per avvikelse.
+- [ ] Kvittering sparas i DB (nyckel: församling, datum, typ, normaliserat ändamål) och överlever omläsning av kalendern. Kvitterade avvikelser flyttas till en ihopfälld details-lista med Ångra-knapp.
+- [ ] Kvittera/Ångra sker via POST-formulär som fungerar utan JS; sidan omdirigerar tillbaka till /kalender.
+- [ ] Nytt prov anropar ROUTErna (GET /kalender visar avvikelsen, POST kvittera döljer den, POST ångra visar den igen) - inte bara analysfunktionen.
+- [ ] Analysen har egna enhetstester: samma datum överallt = inga flaggor; en avvikare flaggas; två kluster (samma ändamål olika månader) blandas inte ihop.
+
+## Implementation hints
+- Ny ren analysmodul: app/core/kollektdagar.py (tar list[Kalenderrad], returnerar avvikelser) - testbar utan webb.
+- DB: ny SQLAlchemy-modell + funktioner i app/database.py (create_all täcker ny tabell; ingen Alembic). Följ mönstret från befintliga tabeller.
+- Routes i app/routes/web.py, vy i app/templates/kalender.html (befintlig notisstil hv-badge varning + details-mönstret).
+- normalisera_andamal finns i app/core/normalize.py.
+
+## Verification
+- `uv run --offline --with pytest --with httpx pytest tests/test_kollektdagar.py tests/test_maj2026.py`
+- Browser: /kalender visar Hemsö-avvikelser (20 juni-flytten m.fl.); klicka Kvittera - avvikelsen flyttar till kvitterade; Ångra - tillbaka. Verifiera vid 390px och 1280px.
+
+- ID: `01M1418J62GBEVDP53543YTP2F`
+- Type: feature
+- Actor: ai:claude-fable-5
+
+---
+
+## [P3][done] [haven] Visa notis i avstämningen när söktypen skiljer mellan kalender och KOB
+
+## Context
+Avstämningen jämför bara belopp per (församling, tillfällesdatum) - kalenderns kollekttyp och KOB-radens kollekttyp slås ihop till en badge utan att jämföras. En felregistrerad söktyp i KOB (verkligt fall: Hemsö 2026-06-28, registrerad som Förskollekt nationell org fast kalendern säger R till Act) passerar därför tyst när beloppet stämmer.
+
+## Acceptance criteria
+- [ ] När båda sidor finns för ett tillfälle och beloppet stämmer men typerna skiljer visas status notis med orsak i stil med "belopp stämmer, men söktypen skiljer: kalendern säger Rikskollekt, KOB har Förskollekt nationell org".
+- [ ] Typmappningen hanterar att Swish-sidan har bokstäver (F/R/S/N) och KOB fulla namn (Församlingskollekt, Rikskollekt, Stiftskollekt, Förskollekt nationell org) - jämför normaliserat, flagga inte F mot Församlingskollekt.
+- [ ] N-regeln respekteras: en F-kollekt till Act/SKUT som KOB har som Förskollekt nationell org är RÄTT (typ N på Swish-sidan efter TASK-228) - ingen notis då.
+- [ ] Befintlig notis för ändamålstext och alla diff-bedömningar opåverkade; facittestet grönt.
+- [ ] Nya tester: typskillnad ger notis; F vs Församlingskollekt och N vs Förskollekt nationell org ger ingen notis.
+
+## Implementation hints
+- app/core/reconcile.py: _bedom_kollekt har idag inte typerna per sida - skicka in swish-typset och kob-typset separat (de finns i avstam_kollekt-loopen som s["typ"]/k["typ"]) i stället för den ihopslagna bokstaven.
+- Mappning KOB-namn -> bokstav: Rikskollekt=R, Stiftskollekt=S, Församlingskollekt=F, Förskollekt nationell org=N (se config/aggregate för N-terminologin).
+- Ingen templateändring krävs om orsaken går ut via befintliga orsak-fältet.
+
+## Verification
+- `uv run --offline --with pytest --with httpx pytest tests/test_avstamning_intervall.py tests/test_maj2026.py tests/test_nationell_org.py`
+- Manuellt: /avstamning med juni-rapporten - Hemsö 2026-06-28 får typnotisen.
+
+- ID: `01M14182CSH5RQDVX32SN3XPE8`
+- Type: improvement
+- Actor: ai:claude-fable-5
+
+---
+
 ## [P3][done] [haven] Lägg bekräftelsesteg på Ta bort-knappar och förstora små touchytor
 
 ## Context
