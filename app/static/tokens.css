@@ -49,8 +49,24 @@ body { padding-block: 0; }
   background: none; border: none; color: inherit; cursor: pointer;
   padding: 0.15rem; margin: 0 0 0 0.9rem;  /* nolla Picos default margin-bottom */
   line-height: 0; opacity: 0.9; display: inline-flex; align-items: center;
+  position: relative;  /* barn for forstorad, osynlig klickyta nedan */
 }
 .tema-btn:hover { opacity: 1; }
+/* Forstora tumzonen till ~40px utan att paverka navradens layout/hojd -
+   overlay-ytan ligger utanfor floded (absolut positionerad). */
+.tema-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 2.5rem; height: 2.5rem;
+  transform: translate(-50%, -50%);
+}
+
+/* Kompakt knapp med rimlig touchyta (~34px) - anvands for Andra/Ta bort. */
+.hv-btn-sm {
+  margin: 0; padding: 0.5rem 0.9rem; min-height: 2.25rem;
+  display: inline-flex; align-items: center;
+}
 
 header.hv-top {
   background: var(--hv-accent);
@@ -64,9 +80,32 @@ header.hv-top nav a { margin-left: 0.9rem; text-decoration: none; opacity: 0.9; 
 header.hv-top nav a:hover { opacity: 1; text-decoration: underline; }
 header.hv-top nav a.aktiv { opacity: 1; text-decoration: underline; font-weight: 700; }
 
-/* Tabeller ska scrolla i egen container, inte trycka ut sidan pa mobil */
-figure { overflow-x: auto; }
-.hv-post table { display: block; overflow-x: auto; }
+/* Tabeller ska scrolla i egen container, inte trycka ut sidan pa mobil.
+   Scroll-affordans: kantskugga som visar att det gar att dra i sidled.
+   Masken (local) tacker overflow-innehallet, skuggan (scroll) ligger fast
+   i containerns kant sa den bara syns nar det finns mer att scrolla dit. */
+:root { --hv-scroll-skugga: rgba(0, 0, 0, 0.28); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --hv-scroll-skugga: rgba(255, 255, 255, 0.28); }
+}
+:root[data-theme="dark"] { --hv-scroll-skugga: rgba(255, 255, 255, 0.28); }
+
+figure,
+.hv-post table,
+.hv-scrollx {
+  overflow-x: auto;
+  background-repeat: no-repeat;
+  background-color: var(--pico-background-color);
+  background-image:
+    linear-gradient(to right, var(--pico-background-color) 20%, rgba(0, 0, 0, 0)),
+    linear-gradient(to left, var(--pico-background-color) 20%, rgba(0, 0, 0, 0)),
+    linear-gradient(to right, var(--hv-scroll-skugga), rgba(0, 0, 0, 0)),
+    linear-gradient(to left, var(--hv-scroll-skugga), rgba(0, 0, 0, 0));
+  background-position: 0 0, 100% 0, 0 0, 100% 0;
+  background-size: 32px 100%, 32px 100%, 16px 100%, 16px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+.hv-post table { display: block; }
 
 main.container { padding-block: 1rem; }
 h1 { font-size: 1.4rem; }

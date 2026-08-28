@@ -80,6 +80,19 @@
   });
 })();
 
+// Bekraftelsesteg pa Ta bort-knappar: data-bekrafta="fraga" pa formularet.
+// Progressiv: utan JS skickas formuläret direkt som idag.
+(function () {
+  "use strict";
+  document.addEventListener("submit", function (ev) {
+    var form = ev.target;
+    var fraga = form.getAttribute("data-bekrafta");
+    if (fraga && !window.confirm(fraga)) {
+      ev.preventDefault();
+    }
+  });
+})();
+
 // Justeringsvyn: live-filtrering av radtabeller, markera-alla-synliga och
 // lopande rakning av markerade rader + summa. Progressiv: utan JS visas alla
 // rader med kryssrutor och kan bockas manuellt.

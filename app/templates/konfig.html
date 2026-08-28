@@ -19,10 +19,11 @@ oförändrad (Excel-filen är sanningskälla). Ändringar slår igenom direkt.</
       <td>{{ m.registreringssatt.value if m.registreringssatt else '' }}</td>
       <td>
         <div style="display:flex;gap:0.4rem;">
-          <a href="/konfig?namn={{ m.namn|urlencode }}{{ qamp }}" role="button" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ändra</a>
-          <form method="post" action="/konfig/mottagare/tabort{{ q }}" style="margin:0;">
+          <a href="/konfig?namn={{ m.namn|urlencode }}{{ qamp }}" role="button" class="secondary outline hv-btn-sm">Ändra</a>
+          <form method="post" action="/konfig/mottagare/tabort{{ q }}" style="margin:0;"
+                data-bekrafta="Ta bort mottagaren &quot;{{ m.namn }}&quot;?">
             <input type="hidden" name="namn" value="{{ m.namn }}">
-            <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+            <button type="submit" class="secondary outline hv-btn-sm">Ta bort</button>
           </form>
         </div>
       </td>

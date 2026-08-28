@@ -36,10 +36,11 @@ kalendern).</p>
       <td>{{ o.ny_tillfallesdatum or "" }}</td>
       <td>
         <div style="display:flex;gap:0.4rem;">
-          <a href="/justeringar?redigera_ov={{ o.id }}{{ qamp }}" role="button" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ändra</a>
-          <form method="post" action="/justeringar/overstyrning/tabort{{ q }}" style="margin:0;">
+          <a href="/justeringar?redigera_ov={{ o.id }}{{ qamp }}" role="button" class="secondary outline hv-btn-sm">Ändra</a>
+          <form method="post" action="/justeringar/overstyrning/tabort{{ q }}" style="margin:0;"
+                data-bekrafta="Ta bort överstyrningen för {{ o.forsamling }}?">
             <input type="hidden" name="id" value="{{ o.id }}">
-            <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+            <button type="submit" class="secondary outline hv-btn-sm">Ta bort</button>
           </form>
         </div>
       </td>
@@ -100,7 +101,7 @@ kalendern).</p>
     <form method="post" action="/justeringar/overstyrning/skapa{{ q }}">
       <input type="hidden" name="period" value="{{ period }}">
       <input type="hidden" name="forsamling" value="{{ ov_forsamling }}">
-      <div style="overflow-x:auto;">
+      <div class="hv-scrollx">
       <table class="hv-radtabell">
         <thead><tr>
           <th><input type="checkbox" class="hv-markera-alla" title="Markera alla synliga"></th>
@@ -157,9 +158,10 @@ som ska brytas ut ur månadssumman och registreras separat.</p>
         {% set e = sar_effekt.get(s.id) %}
         {% if e %}{{ e.belopp|kr }} kr <span class="hv-swish">({{ e.antal }} tx)</span>{% else %}<span class="hv-tomt">0 tx</span>{% endif %}
       </td>
-      <td><form method="post" action="/justeringar/sarskild/tabort{{ q }}">
+      <td><form method="post" action="/justeringar/sarskild/tabort{{ q }}"
+                data-bekrafta="Ta bort särskilda posten &quot;{{ s.namn }}&quot;?">
         <input type="hidden" name="id" value="{{ s.id }}">
-        <button type="submit" class="secondary outline" style="margin:0;padding:0.2rem 0.6rem;">Ta bort</button>
+        <button type="submit" class="secondary outline hv-btn-sm">Ta bort</button>
       </form></td>
     </tr>
     {% endfor %}
@@ -191,7 +193,7 @@ som ska brytas ut ur månadssumman och registreras separat.</p>
     <form method="post" action="/justeringar/sarskild/skapa{{ q }}">
       <input type="hidden" name="period" value="{{ period }}">
       <input type="hidden" name="verksamhet" value="{{ sar_verksamhet }}">
-      <div style="overflow-x:auto;">
+      <div class="hv-scrollx">
       <table class="hv-radtabell">
         <thead><tr>
           <th><input type="checkbox" class="hv-markera-alla" title="Markera alla synliga"></th>
