@@ -142,15 +142,18 @@
 </article>
 {% endif %}
 
-<div class="hv-export">
-  <button type="button" id="export-json" class="secondary outline"
-          data-url="/ko/export.json?fil={{ vald|urlencode }}">Kopiera underlag som JSON</button>
-  <a href="/ko/export.json?fil={{ vald|urlencode }}" target="_blank" rel="noopener" class="hv-swish">öppna JSON</a>
-  <a href="/kob-userscript.user.js" class="secondary outline" role="button"
-     title="Installeras i Tampermonkey/Violentmonkey. Förifyller KOB från underlaget.">Installera KOB-userscript</a>
-  <span id="export-status" class="hv-swish" hidden></span>
-  <textarea id="export-textarea" hidden readonly rows="6"></textarea>
-</div>
+<details class="hv-export">
+  <summary>Export och verktyg</summary>
+  <div class="hv-export-rad">
+    <button type="button" id="export-json" class="secondary outline"
+            data-url="/ko/export.json?fil={{ vald|urlencode }}">Kopiera underlag som JSON</button>
+    <a href="/ko/export.json?fil={{ vald|urlencode }}" target="_blank" rel="noopener" class="hv-swish">öppna JSON</a>
+    <a href="/kob-userscript.user.js" class="secondary outline" role="button"
+       title="Installeras i Tampermonkey/Violentmonkey. Förifyller KOB från underlaget.">Installera KOB-userscript</a>
+    <span id="export-status" class="hv-swish" hidden></span>
+    <textarea id="export-textarea" hidden readonly rows="6"></textarea>
+  </div>
+</details>
 
 <div class="hv-tabs">
   <input type="radio" name="kotab" id="tab-koll" checked>

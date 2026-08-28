@@ -80,6 +80,23 @@ header.hv-top nav a { margin-left: 0.9rem; text-decoration: none; opacity: 0.9; 
 header.hv-top nav a:hover { opacity: 1; text-decoration: underline; }
 header.hv-top nav a.aktiv { opacity: 1; text-decoration: underline; font-weight: 700; }
 
+/* Mobil: navet far annars 3-4 rader och trycker ner arbetskons forsta kort
+   under skarmen (TASK-1526). En scrollbar rad tar bara en radhojd. */
+@media (max-width: 576px) {
+  header.hv-top nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 0.1rem;
+  }
+  header.hv-top nav a {
+    flex: none;
+    margin-left: 0;
+    margin-right: 0.8rem;
+  }
+}
+
 /* Tabeller ska scrolla i egen container, inte trycka ut sidan pa mobil.
    Scroll-affordans: kantskugga som visar att det gar att dra i sidled.
    Masken (local) tacker overflow-innehallet, skuggan (scroll) ligger fast
@@ -309,7 +326,16 @@ p.hv-badge { white-space: normal; }
 .hv-baradiff { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-weight: 600; }
 .hv-baradiff input { margin: 0; }
 
-/* JSON-export i arbetskön */
-.hv-export { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 1rem; }
-.hv-export button { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
-.hv-export textarea { width: 100%; margin: 0.4rem 0 0; font-family: monospace; font-size: 0.78rem; }
+/* JSON-export i arbetskön - ligger bakom details sa den inte tar plats
+   ovanfor kon pa mobil (TASK-1526). */
+details.hv-export { margin: 0 0 1rem; }
+details.hv-export summary {
+  cursor: pointer; font-weight: 600; padding: 0.3rem 0;
+  list-style: none;
+}
+details.hv-export summary::-webkit-details-marker { display: none; }
+details.hv-export summary::before { content: "▸ "; }
+details.hv-export[open] summary::before { content: "▾ "; }
+.hv-export-rad { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.5rem; }
+.hv-export-rad button { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
+.hv-export-rad textarea { width: 100%; margin: 0.4rem 0 0; font-family: monospace; font-size: 0.78rem; }
