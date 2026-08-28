@@ -42,34 +42,37 @@
     </div>
     <span class="hv-meta">Swish {{ f.swish_total|kr }} · KOB {{ f.kob_total|kr }}</span>
   </header>
-  <table>
-    <thead><tr>
-      <th>Datum</th><th>Typ</th><th>Ändamål (Swish → KOB)</th>
-      <th style="text-align:right">Swish</th><th style="text-align:right">KOB</th>
-      <th style="text-align:right">Diff</th><th>Status</th>
-    </tr></thead>
-    <tbody>
-      {% for r in f.rader %}
-      <tr data-diff="{{ 'true' if r.status == 'diff' else 'false' }}">
-        <td>{{ r.datum or "-" }}</td>
-        <td>{% if r.kollekttyp %}<span class="hv-badge typ-{{ r.kollekttyp|lower }}">{{ r.kollekttyp }}</span>{% endif %}</td>
-        <td class="hv-meta">
-          {{ r.swish_andamal or "-" }}
-          {% if r.kob_andamal and r.kob_andamal != r.swish_andamal %}<br><span class="hv-swish">KOB: {{ r.kob_andamal }}</span>{% endif %}
-        </td>
-        <td style="text-align:right">{{ r.swish|kr }}</td>
-        <td style="text-align:right">{{ r.kob|kr }}</td>
-        <td style="text-align:right">{% if r.diff != 0 %}<span class="hv-diff-varning">{{ r.diff|kr }}</span>{% else %}0,00{% endif %}</td>
-        <td>
-          {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
-          {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">notis</span>
-          {% else %}<span class="hv-badge varning" title="{{ r.orsak }}">diff</span>{% endif %}
-          {% if r.orsak %}<span class="hv-swish"> {{ r.orsak }}</span>{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <details class="hv-tx" {% if f.har_diff %}open{% endif %}>
+    <summary>Visa {{ f.rader|length }} tillfälle{{ '' if f.rader|length == 1 else 'n' }}</summary>
+    <table>
+      <thead><tr>
+        <th>Datum</th><th>Typ</th><th>Ändamål (Swish → KOB)</th>
+        <th style="text-align:right">Swish</th><th style="text-align:right">KOB</th>
+        <th style="text-align:right">Diff</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        {% for r in f.rader %}
+        <tr data-diff="{{ 'true' if r.status == 'diff' else 'false' }}">
+          <td>{{ r.datum or "-" }}</td>
+          <td>{% if r.kollekttyp %}<span class="hv-badge typ-{{ r.kollekttyp|lower }}">{{ r.kollekttyp }}</span>{% endif %}</td>
+          <td class="hv-meta">
+            {{ r.swish_andamal or "-" }}
+            {% if r.kob_andamal and r.kob_andamal != r.swish_andamal %}<br><span class="hv-swish">KOB: {{ r.kob_andamal }}</span>{% endif %}
+          </td>
+          <td style="text-align:right">{{ r.swish|kr }}</td>
+          <td style="text-align:right">{{ r.kob|kr }}</td>
+          <td style="text-align:right">{% if r.diff != 0 %}<span class="hv-diff-varning">{{ r.diff|kr }}</span>{% else %}0,00{% endif %}</td>
+          <td>
+            {% if r.status == 'ok' %}<span class="hv-badge klar">✓</span>
+            {% elif r.status == 'notis' %}<span class="hv-badge varning" title="{{ r.orsak }}">notis</span>
+            {% else %}<span class="hv-badge varning" title="{{ r.orsak }}">diff</span>{% endif %}
+            {% if r.orsak %}<span class="hv-swish"> {{ r.orsak }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
 </article>
 {% endfor %}
 {% endif %}

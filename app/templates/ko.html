@@ -37,7 +37,8 @@
   {% endif %}
 
   {% if p.delposter and p.grupp == 'R/S' %}
-    <strong>Meddelanden:</strong>
+  <details class="hv-tx">
+    <summary>Visa meddelanden</summary>
     <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; margin-bottom: 1rem;">
     {% for d in p.delposter %}
       {% if d.dedupade_meddelanden %}
@@ -52,7 +53,10 @@
       {% endif %}
     {% endfor %}
     </div>
+  </details>
   {% elif p.dedupade_meddelanden %}
+  <details class="hv-tx">
+    <summary>Visa meddelanden ({{ p.dedupade_meddelanden|length }})</summary>
     <table class="hv-radtabell" style="width: auto; margin-top: 0.5rem; margin-bottom: 1rem;">
       <thead><tr><th>Meddelanden</th><th style="text-align: center;">Antal</th></tr></thead>
       <tbody>
@@ -61,6 +65,7 @@
         {% endfor %}
       </tbody>
     </table>
+  </details>
   {% endif %}
 
   {% if p.transaktioner %}
@@ -129,6 +134,13 @@
   <progress id="hv-progressbar" value="{{ vy.klara }}" max="{{ vy.totalt }}"></progress>
   <span class="hv-rakning"><span id="hv-klara">{{ vy.klara }}</span> / {{ vy.totalt }} klara</span>
 </div>
+
+{% if vy.totalt and vy.klara == vy.totalt %}
+<article class="hv-post">
+  <p><span class="hv-badge klar">✓ Alla poster bekräftade</span></p>
+  <a href="/avstamning?fil={{ vald|urlencode }}" role="button">Gå till avstämning</a>
+</article>
+{% endif %}
 
 <div class="hv-export">
   <button type="button" id="export-json" class="secondary outline"
