@@ -30,6 +30,22 @@ class Avstamningsresultat:
     kob_kollekt_uppladdad: str | None = None
     kob_insamling_uppladdad: str | None = None
 
+    @property
+    def kollekt_saknar_period(self) -> bool:
+        """Exporten finns men ligger helt utanfor rapportens period - alla
+        rader filtrerades och inget kom in i jamforelsen. Manadsskiftesrader
+        som raddats via swish-tillfallen ger kob_total > 0 och da ar det
+        vanliga vyn som galler."""
+        k = self.kollekt
+        return bool(k and k.utanfor_period_antal > 0
+                    and k.kob_total == 0)
+
+    @property
+    def gava_saknar_period(self) -> bool:
+        g = self.gava
+        return bool(g and g.utanfor_period_antal > 0
+                    and all(r.kob == 0 for r in g.rader))
+
 
 def _senaste(glob: str) -> Path | None:
     if not DATA_DIR.exists():

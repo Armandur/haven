@@ -20,6 +20,13 @@
 
 {% if avst.kollekt %}
 <h2>Kollekter - per församling och tillfälle</h2>
+{% if avst.kollekt_saknar_period %}
+<article><p class="hv-badge varning">
+  Ingen KOB-kollektexport finns för rapportens period ({{ rap.period }}) - den
+  uppladdade täcker {{ avst.kollekt.kob_intervall.fran }} till {{ avst.kollekt.kob_intervall.till }}.
+  Hämta en kollektexport för perioden i KOB och ladda upp den, så kan kollekterna stämmas av.
+</p></article>
+{% else %}
 {% if avst.rapport_intervall and avst.kollekt.kob_intervall and avst.kollekt.kob_intervall.saknar_tackning_for(avst.rapport_intervall) %}
 <article><p class="hv-badge varning">
   Swish-rapporten täcker {{ avst.rapport_intervall.fran }} - {{ avst.rapport_intervall.till }},
@@ -85,10 +92,18 @@
   </details>
 </article>
 {% endfor %}
+{% endif %}{# kollekt_saknar_period #}
 {% endif %}
 
 {% if avst.gava %}
 <h2>Gåvor - per verksamhet/konto</h2>
+{% if avst.gava_saknar_period %}
+<article><p class="hv-badge varning">
+  Ingen KOB-insamlingsexport finns för rapportens period ({{ rap.period }}) - den
+  uppladdade täcker {{ avst.gava.kob_intervall.fran }} till {{ avst.gava.kob_intervall.till }}.
+  Hämta en insamlingsexport för perioden i KOB och ladda upp den, så kan gåvorna stämmas av.
+</p></article>
+{% else %}
 {% if avst.rapport_intervall and avst.gava.kob_intervall and avst.gava.kob_intervall.saknar_tackning_for(avst.rapport_intervall) %}
 <article><p class="hv-badge varning">
   Swish-rapporten täcker {{ avst.rapport_intervall.fran }} - {{ avst.rapport_intervall.till }},
@@ -128,5 +143,6 @@
 <ul>{% for d in avst.gava.omappade %}<li class="hv-swish">{{ d.beskrivning }} - {{ d.belopp|kr }} kr</li>{% endfor %}</ul>
 {% endif %}
 <p class="hv-swish">Musik och Gåvomedelskassan väntas sakna KOB-rader tills de registrerats. Särskilda poster (utbrytning ur månadssumman) byggs i nästa steg.</p>
+{% endif %}{# gava_saknar_period #}
 {% endif %}
 {% endblock %}

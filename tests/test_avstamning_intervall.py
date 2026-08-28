@@ -311,39 +311,79 @@ def test_rapportens_uttryckliga_datumintervall_anvands_fore_transaktionsdatumen(
     )
 
 
-def test_template_visar_bada_intervallvarningarna():
+def _render_avstamning(avst) -> str:
     from types import SimpleNamespace
-
-    rapport_intervall = Datumintervall(date(2026, 5, 1), date(2026, 6, 1))
-    avst = Avstamningsresultat(
-        kollekt=KollektAvstamning(
-            kob_intervall=Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
-            utanfor_period_antal=2,
-            utanfor_period_summa=Decimal("350.00"),
-        ),
-        gava=GavaAvstamning(
-            kob_intervall=Datumintervall(date(2026, 5, 2), date(2026, 5, 30)),
-            utanfor_period_antal=3,
-            utanfor_period_summa=Decimal("475.00"),
-        ),
-        kob_kollekt_fil="kollekt.xls",
-        kob_insamling_fil="insamling.xls",
-        saknade=[],
-        rapport_intervall=rapport_intervall,
-    )
     vy = SimpleNamespace(resultat=SimpleNamespace(rapport=SimpleNamespace(period="2026-05")))
     request = SimpleNamespace(url=SimpleNamespace(path="/avstamning"),
                               state=SimpleNamespace(saknad_rapportfil=None))
-
-    html = templates.get_template("avstamning.html").render(
+    return templates.get_template("avstamning.html").render(
         request=request, vy=vy, avst=avst, vald=None,
     )
+
+
+def test_template_visar_bada_intervallvarningarna():
+    from app.core.reconcile import AvstamRad, ForsamlingAvstamning, GavaAvstamRad
+
+    # Delvis overlapp: bade jamforda rader (kob > 0) och bortfiltrerade finns,
+    # sa det ar intervallbanner + notis som ska visas, inte saknar-period-beskedet.
+    kollekt = KollektAvstamning(
+        kob_intervall=Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
+        utanfor_period_antal=2,
+        utanfor_period_summa=Decimal("350.00"),
+        forsamlingar=[ForsamlingAvstamning("Testförsamlingen", rader=[AvstamRad(
+            forsamling="Testförsamlingen", datum=date(2026, 5, 17),
+            swish_andamal="X", kob_andamal="X", kollekttyp="F",
+            swish=Decimal("100.00"), kob=Decimal("100.00"),
+            diff=Decimal("0.00"), status="ok",
+        )])],
+    )
+    gava = GavaAvstamning(
+        kob_intervall=Datumintervall(date(2026, 5, 2), date(2026, 5, 30)),
+        utanfor_period_antal=3,
+        utanfor_period_summa=Decimal("475.00"),
+        rader=[GavaAvstamRad(verksamhet="Diakoni", swish=Decimal("50.00"),
+                             kob=Decimal("50.00"), diff=Decimal("0.00"), status="ok")],
+    )
+    avst = Avstamningsresultat(
+        kollekt=kollekt, gava=gava,
+        kob_kollekt_fil="kollekt.xls", kob_insamling_fil="insamling.xls",
+        saknade=[], rapport_intervall=Datumintervall(date(2026, 5, 1), date(2026, 6, 1)),
+    )
+
+    html = _render_avstamning(avst)
 
     assert "KOB-kollektexporten täcker 2026-05-01 - 2026-05-31" in html
     assert "KOB-insamlingsexporten täcker 2026-05-02 - 2026-05-30" in html
     assert html.count("Hämta om exporten med ett större datumintervall.") == 2
     assert "2 KOB-rader (350,00 kr) ligger utanför rapportens period" in html
     assert "3 KOB-rader (475,00 kr) ligger utanför rapportens period" in html
+
+
+def test_template_visar_saknar_period_i_stallet_for_radvarningar():
+    """Helt disjunkt export (alla KOB-rader bortfiltrerade, inget jamfort):
+    ETT tydligt besked per sektion i stallet for banner + notis + diffrader."""
+    avst = Avstamningsresultat(
+        kollekt=KollektAvstamning(
+            kob_intervall=Datumintervall(date(2026, 5, 31), date(2026, 6, 28)),
+            utanfor_period_antal=20,
+            utanfor_period_summa=Decimal("12262.00"),
+        ),
+        gava=GavaAvstamning(
+            kob_intervall=Datumintervall(date(2026, 6, 5), date(2026, 6, 30)),
+            utanfor_period_antal=2,
+            utanfor_period_summa=Decimal("17909.50"),
+        ),
+        kob_kollekt_fil="kollekt.xls", kob_insamling_fil="insamling.xls",
+        saknade=[], rapport_intervall=Datumintervall(date(2026, 7, 1), date(2026, 7, 31)),
+    )
+    assert avst.kollekt_saknar_period and avst.gava_saknar_period
+
+    html = _render_avstamning(avst)
+
+    assert "Ingen KOB-kollektexport finns för rapportens period" in html
+    assert "Ingen KOB-insamlingsexport finns för rapportens period" in html
+    assert "Hämta om exporten med ett större datumintervall." not in html
+    assert "ligger utanför rapportens period och visas inte" not in html
 
 
 def test_ingen_varning_nar_exporten_bara_borjar_senare():
