@@ -256,10 +256,11 @@ class KoVy:
 
 
 def standard_rapportfil() -> Path | None:
-    """Forsta .xlsx i DATA_DIR som inte ar kalendern - default att lasa in."""
+    """Nyaste .xlsx i DATA_DIR som inte ar kalendern - default att lasa in.
+    Filnamnen bar ar-manad, sa omvand bokstavsordning ger senaste manaden."""
     if not DATA_DIR.exists():
         return None
-    for f in sorted(DATA_DIR.glob("*.xlsx")):
+    for f in sorted(DATA_DIR.glob("*.xlsx"), reverse=True):
         if f.name != KALENDER_FIL and not f.name.startswith("."):
             return f
     return None

@@ -8,9 +8,14 @@
 <article><p class="hv-badge varning">Saknar: {{ avst.saknade|join(", ") }}. Lägg filen i data-katalogen.</p></article>
 {% endif %}
 <p class="hv-meta">
-  {% if avst.kob_kollekt_fil %}Kollekt: <code>{{ avst.kob_kollekt_fil }}</code>{% endif %}
-  {% if avst.kob_insamling_fil %} · Insamling: <code>{{ avst.kob_insamling_fil }}</code>{% endif %}
-  · Endast KOB:s <strong>Swish 1</strong>-rader jämförs.
+  {% if avst.kob_kollekt_fil %}Kollektexport: <code>{{ avst.kob_kollekt_fil }}</code>
+    {%- if avst.kollekt and avst.kollekt.kob_intervall %} - täcker {{ avst.kollekt.kob_intervall.fran }} till {{ avst.kollekt.kob_intervall.till }}{% endif %}
+    {%- if avst.kob_kollekt_uppladdad %}, uppladdad {{ avst.kob_kollekt_uppladdad }}{% endif %}<br>{% endif %}
+  {% if avst.kob_insamling_fil %}Insamlingsexport: <code>{{ avst.kob_insamling_fil }}</code>
+    {%- if avst.gava and avst.gava.kob_intervall %} - täcker {{ avst.gava.kob_intervall.fran }} till {{ avst.gava.kob_intervall.till }}{% endif %}
+    {%- if avst.kob_insamling_uppladdad %}, uppladdad {{ avst.kob_insamling_uppladdad }}{% endif %}<br>{% endif %}
+  Endast KOB:s <strong>Swish 1</strong>-rader jämförs. Uttagstidpunkt går inte att
+  läsa ur exportfilerna - "uppladdad" är när filen lades in i Håven.
 </p>
 
 {% if avst.kollekt %}

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from app.config import DATA_DIR, KOB_INSAMLING_GLOB, KOB_KOLLEKT_GLOB
@@ -25,6 +25,10 @@ class Avstamningsresultat:
     kob_insamling_fil: str | None
     saknade: list[str]
     rapport_intervall: Datumintervall | None
+    # Filsystemets andringstid = nar filen laddades upp/lades i data/.
+    # KOB:s exporter bar ingen egen uttagstidpunkt (OLE-metadatan ar tom).
+    kob_kollekt_uppladdad: str | None = None
+    kob_insamling_uppladdad: str | None = None
 
 
 def _senaste(glob: str) -> Path | None:
@@ -32,6 +36,12 @@ def _senaste(glob: str) -> Path | None:
         return None
     traffar = sorted(DATA_DIR.glob(glob))
     return traffar[-1] if traffar else None
+
+
+def _uppladdad(p: Path | None) -> str | None:
+    if p is None:
+        return None
+    return datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
 
 
 def kor_avstamning(res: Pipelineresultat) -> Avstamningsresultat:
@@ -76,4 +86,6 @@ def kor_avstamning(res: Pipelineresultat) -> Avstamningsresultat:
         kob_insamling_fil=insamlingsfil.name if insamlingsfil else None,
         saknade=saknade,
         rapport_intervall=rapport_intervall,
+        kob_kollekt_uppladdad=_uppladdad(kollektfil),
+        kob_insamling_uppladdad=_uppladdad(insamlingsfil),
     )
