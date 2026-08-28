@@ -102,6 +102,18 @@ class KollektAvstamning:
     def antal_diffar(self) -> int:
         return sum(1 for f in self.forsamlingar for r in f.rader if r.status == "diff")
 
+    @property
+    def tillfallen_utanfor_export(self) -> int:
+        """Swish-tillfallen som fick utanfor-intervallet-orsaken. Bannern
+        'hamta om exporten' visas bara nar sadana finns - att rapportens
+        deklarerade slut ligger efter exportens sista rad betyder inget om
+        inga kollekttillfallen faktiskt ligger dar (betalningar sista
+        vardagarna framatfylls till sista sondagens tillfalle)."""
+        return sum(
+            1 for f in self.forsamlingar for r in f.rader
+            if "utanför KOB-exportens intervall" in r.orsak
+        )
+
 
 _KOB_TYP_TILL_KOD = {
     kollekttyp_namn(kod).casefold(): kod

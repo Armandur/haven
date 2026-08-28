@@ -330,12 +330,22 @@ def test_template_visar_bada_intervallvarningarna():
         kob_intervall=Datumintervall(date(2026, 5, 1), date(2026, 5, 31)),
         utanfor_period_antal=2,
         utanfor_period_summa=Decimal("350.00"),
-        forsamlingar=[ForsamlingAvstamning("Testförsamlingen", rader=[AvstamRad(
-            forsamling="Testförsamlingen", datum=date(2026, 5, 17),
-            swish_andamal="X", kob_andamal="X", kollekttyp="F",
-            swish=Decimal("100.00"), kob=Decimal("100.00"),
-            diff=Decimal("0.00"), status="ok",
-        )])],
+        forsamlingar=[ForsamlingAvstamning("Testförsamlingen", rader=[
+            AvstamRad(
+                forsamling="Testförsamlingen", datum=date(2026, 5, 17),
+                swish_andamal="X", kob_andamal="X", kollekttyp="F",
+                swish=Decimal("100.00"), kob=Decimal("100.00"),
+                diff=Decimal("0.00"), status="ok",
+            ),
+            AvstamRad(
+                forsamling="Testförsamlingen", datum=date(2026, 6, 1),
+                swish_andamal="X", kob_andamal="", kollekttyp="F",
+                swish=Decimal("50.00"), kob=Decimal("0.00"),
+                diff=Decimal("50.00"), status="diff",
+                orsak="datumet ligger utanför KOB-exportens intervall - hämta om "
+                      "exporten med ett större datumintervall",
+            ),
+        ])],
     )
     gava = GavaAvstamning(
         kob_intervall=Datumintervall(date(2026, 5, 2), date(2026, 5, 30)),
@@ -352,11 +362,40 @@ def test_template_visar_bada_intervallvarningarna():
 
     html = _render_avstamning(avst)
 
-    assert "KOB-kollektexporten täcker 2026-05-01 - 2026-05-31" in html
+    assert "1 kollekttillfälle(n) i Swish-rapporten" in html
+    assert "(2026-05-01 - 2026-05-31)" in html
     assert "KOB-insamlingsexporten täcker 2026-05-02 - 2026-05-30" in html
     assert html.count("Hämta om exporten med ett större datumintervall.") == 2
     assert "2 KOB-rader (350,00 kr) ligger utanför rapportens period" in html
     assert "3 KOB-rader (475,00 kr) ligger utanför rapportens period" in html
+
+
+def test_kollektbanner_visas_inte_utan_tillfallen_utanfor_exporten():
+    """Juni-fallet: rapportens deklarerade slut (30/6) ligger efter exportens
+    sista tillfalle (28/6), men inga kollekttillfallen finns dar - betalningar
+    29-30/6 framatfylls till 28/6. Ingen hamta om-banner da."""
+    from app.core.reconcile import AvstamRad, ForsamlingAvstamning
+
+    kollekt = KollektAvstamning(
+        kob_intervall=Datumintervall(date(2026, 5, 31), date(2026, 6, 28)),
+        forsamlingar=[ForsamlingAvstamning("Testförsamlingen", rader=[AvstamRad(
+            forsamling="Testförsamlingen", datum=date(2026, 6, 28),
+            swish_andamal="X", kob_andamal="X", kollekttyp="R",
+            swish=Decimal("100.00"), kob=Decimal("100.00"),
+            diff=Decimal("0.00"), status="ok",
+        )])],
+    )
+    avst = Avstamningsresultat(
+        kollekt=kollekt, gava=None,
+        kob_kollekt_fil="kollekt.xls", kob_insamling_fil=None,
+        saknade=[], rapport_intervall=Datumintervall(date(2026, 6, 1), date(2026, 6, 30)),
+    )
+    assert kollekt.tillfallen_utanfor_export == 0
+
+    html = _render_avstamning(avst)
+
+    assert "Hämta om exporten med ett större datumintervall." not in html
+    assert "Ingen KOB-kollektexport finns" not in html
 
 
 def test_template_visar_saknar_period_i_stallet_for_radvarningar():
