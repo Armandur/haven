@@ -434,6 +434,53 @@ I grupperingen av kollekter på /ko borde det visas i headern på respektive kor
 
 ---
 
+## [P4][done] [haven] Enhetlig versalisering på statusbadges mellan vyerna
+
+## Context
+Avstämningens badges är gemener ("diff", "notis") medan Status-vyns tillståndsbadges är versalinledda ("Ej påbörjad", "Registrerad"). Kosmetiskt men inkonsekvent när båda vyerna används samtidigt. (UI/UX-fynd P3/kosmetiskt.)
+
+## Acceptance criteria
+- [ ] Badge-etiketter är versalinledda konsekvent: avstämningens "diff" blir "Diff" och "notis" blir "Notis" (checkmarken för ok behålls som den är).
+- [ ] Inga andra vyers badge-texter ändras (typ-bokstäverna F/R/S/N och gåva-badgen är koder, inte ord - rör dem inte).
+- [ ] Befintliga tester gröna; uppdatera assertions som binder gemener om sådana finns.
+
+## Implementation hints
+- app/templates/avstamning.html (status-badgen i tabellraderna). Grep efter "notis" i templates/ för att hitta alla ställen.
+
+## Verification
+- `grep -rn ">notis<\|>diff<" app/templates/` ger inga träffar efteråt.
+- `uv run --offline --with pytest --with httpx pytest tests/test_avstamning_intervall.py tests/test_maj2026.py`
+
+- ID: `01M13ZTSVVT6B4ZB17XQZ6X48K`
+- Type: improvement
+- Actor: ai:claude-fable-5
+
+---
+
+## [P4][done] [haven] Minska chrome-till-innehåll i arbetskön på mobil
+
+## Context
+Vid 390x900 upptar logotyp+nav (tre rader) plus JSON- och userscript-knapparna nästan hela första skärmen på /ko - användaren ser ingen registreringspost före scroll, i den vy som används mest. (UI/UX-fynd P3, doc 01M13XZGP1NBZ99JMHYKPNY675.)
+
+## Acceptance criteria
+- [ ] Vid 390px bredd syns första registreringspostens kort (eller åtminstone flikraden + progressbaren + kortets överkant) utan scroll på en 390x800-viewport.
+- [ ] JSON-export- och userscript-knapparna finns kvar och fungerar, men tar väsentligt mindre höjd ovanför kön (t.ex. bakom details, i en kompakt rad, eller flyttade under kön).
+- [ ] Desktop 1280px: ingen försämring, knapparna fortsatt lätta att hitta.
+- [ ] Ingen sid-overflow i sidled vid 390px.
+
+## Implementation hints
+- app/templates/ko.html (knappraden hv-export m.m.), ev. tokens.css för kompaktare nav-rad på mobil (media query). base.html får röras om navkompression behövs, men börja med ko.html - det räcker sannolikt.
+
+## Verification
+- Browser: shot vid 390x800 - första postkortet/flikraden synlig utan scroll; shot vid 1280px - oförändrat användbart.
+- Klicka JSON-knappen och userscript-länken efter flytten - båda fungerar.
+
+- ID: `01M13ZTGH0PZ5FV2WPC9X7NWFD`
+- Type: improvement
+- Actor: ai:claude-fable-5
+
+---
+
 ## [P4][todo] [haven] Arkivering av gammalt underlag
 
 - ID: `01KXV99HY9XQJRFB3WG5WW2GV2`
