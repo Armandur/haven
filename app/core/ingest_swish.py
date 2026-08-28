@@ -19,6 +19,7 @@ from app.core.normalize import to_decimal
 
 _HEADER_MARK = "bokföringsdatum"
 _INTERVALL = re.compile(r"(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})")
+_VISNINGSINTERVALL = re.compile(r"(\d{4}-\d{2}-\d{2})\s+-\s+(\d{4}-\d{2}-\d{2})")
 
 
 class RapportFormatFel(ValueError):
@@ -73,7 +74,7 @@ def _las_metadata(rader: list[list]) -> tuple[str | None, str | None, str | None
             else:
                 m = _INTERVALL.search(t)
                 if m:
-                    intervall = f"{m.group(1)} to {m.group(2)}"
+                    intervall = f"{m.group(1)} - {m.group(2)}"
     return clnr, kontonr, intervall
 
 
@@ -178,7 +179,7 @@ def _satt_tx_id(txs: list[Transaktion]) -> None:
 def _harled_period(intervall: str | None, txs: list[Transaktion]) -> str:
     """Period 'YYYY-MM' ur intervallets startdatum, annars vanligaste transmanad."""
     if intervall:
-        m = _INTERVALL.search(intervall)
+        m = _INTERVALL.search(intervall) or _VISNINGSINTERVALL.search(intervall)
         if m:
             return m.group(1)[:7]
     if txs:

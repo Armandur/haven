@@ -34,6 +34,7 @@ def _d(x: str) -> Decimal:
 
 
 def test_total_och_sjalvkontroll(res):
+    assert res.rapport.datumintervall == "2026-05-01 - 2026-05-31"
     total = sum((t.belopp for t in res.rapport.transaktioner), _d("0"))
     assert total == _d("30692.00")
     u = res.underlag
