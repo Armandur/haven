@@ -15,6 +15,13 @@
 
 {% if avst.kollekt %}
 <h2>Kollekter - per församling och tillfälle</h2>
+{% if avst.rapport_intervall and avst.kollekt.kob_intervall and avst.kollekt.kob_intervall.saknar_tackning_for(avst.rapport_intervall) %}
+<article><p class="hv-badge varning">
+  Swish-rapporten täcker {{ avst.rapport_intervall.fran }} - {{ avst.rapport_intervall.till }},
+  men KOB-kollektexporten täcker {{ avst.kollekt.kob_intervall.fran }} - {{ avst.kollekt.kob_intervall.till }}.
+  Hämta om exporten med ett större datumintervall.
+</p></article>
+{% endif %}
 <div class="grid">
   <div><small>Swish totalt</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.swish_total|kr }} kr</strong></div>
   <div><small>KOB totalt (Swish 1)</small><br><strong style="font-size:1.3rem;">{{ avst.kollekt.kob_total|kr }} kr</strong></div>
@@ -69,6 +76,13 @@
 
 {% if avst.gava %}
 <h2>Gåvor - per verksamhet/konto</h2>
+{% if avst.rapport_intervall and avst.gava.kob_intervall and avst.gava.kob_intervall.saknar_tackning_for(avst.rapport_intervall) %}
+<article><p class="hv-badge varning">
+  Swish-rapporten täcker {{ avst.rapport_intervall.fran }} - {{ avst.rapport_intervall.till }},
+  men KOB-insamlingsexporten täcker {{ avst.gava.kob_intervall.fran }} - {{ avst.gava.kob_intervall.till }}.
+  Hämta om exporten med ett större datumintervall.
+</p></article>
+{% endif %}
 <figure><table>
   <thead><tr>
     <th>Verksamhet</th><th style="text-align:right">Swish</th><th style="text-align:right">KOB</th>

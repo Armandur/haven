@@ -8,6 +8,7 @@ from app.config import DATA_DIR, KOB_INSAMLING_GLOB, KOB_KOLLEKT_GLOB
 from app.core.ingest_kob import las_kob_insamling, las_kob_kollekt
 from app.core.pipeline import Pipelineresultat
 from app.core.reconcile import (
+    Datumintervall,
     GavaAvstamning,
     KollektAvstamning,
     avstam_gava,
@@ -22,6 +23,7 @@ class Avstamningsresultat:
     kob_kollekt_fil: str | None
     kob_insamling_fil: str | None
     saknade: list[str]
+    rapport_intervall: Datumintervall | None
 
 
 def _senaste(glob: str) -> Path | None:
@@ -35,6 +37,10 @@ def kor_avstamning(res: Pipelineresultat) -> Avstamningsresultat:
     kollektfil = _senaste(KOB_KOLLEKT_GLOB)
     insamlingsfil = _senaste(KOB_INSAMLING_GLOB)
     saknade: list[str] = []
+    rapport_datum = [t.trans_datum for t in res.rapport.transaktioner]
+    rapport_intervall = (
+        Datumintervall(min(rapport_datum), max(rapport_datum)) if rapport_datum else None
+    )
 
     kollekt = None
     if kollektfil:
@@ -53,4 +59,5 @@ def kor_avstamning(res: Pipelineresultat) -> Avstamningsresultat:
         kob_kollekt_fil=kollektfil.name if kollektfil else None,
         kob_insamling_fil=insamlingsfil.name if insamlingsfil else None,
         saknade=saknade,
+        rapport_intervall=rapport_intervall,
     )

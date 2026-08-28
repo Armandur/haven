@@ -23,6 +23,22 @@ from app.core.normalize import normalisera_andamal
 SWISH_METOD = "Swish 1"
 
 
+@dataclass(frozen=True)
+class Datumintervall:
+    fran: date
+    till: date
+
+    def innehaller(self, datum: date) -> bool:
+        return self.fran <= datum <= self.till
+
+    def saknar_tackning_for(self, rapport: Datumintervall) -> bool:
+        """Sant nar exporten (self) slutar fore rapporten (extra dagar pa
+        slutet) eller ligger helt efter den (fel manads export). Starten
+        jamfors inte: tackningen harleds ur raderna och underskattar den
+        nastan alltid - forsta tillfallet infaller sallan manadens dag 1."""
+        return rapport.till > self.till or self.fran > rapport.till
+
+
 # --- Kollektavstamning ------------------------------------------------------
 
 @dataclass
@@ -64,6 +80,7 @@ class ForsamlingAvstamning:
 @dataclass
 class KollektAvstamning:
     forsamlingar: list[ForsamlingAvstamning] = field(default_factory=list)
+    kob_intervall: Datumintervall | None = None
 
     @property
     def swish_total(self) -> Decimal:
@@ -87,6 +104,9 @@ def _typ_bokstav(typ_set: set) -> str:
 
 def avstam_kollekt(transaktioner: list[Transaktion],
                    kob_rader: list[KobKollektrad]) -> KollektAvstamning:
+    kob_datum = [r.tillfallesdatum for r in kob_rader if r.tillfallesdatum is not None]
+    kob_intervall = Datumintervall(min(kob_datum), max(kob_datum)) if kob_datum else None
+
     # Swish-sidan: matchade kollekter, nyckel (forsamling, tillfallesdatum).
     swish: dict[tuple, dict] = defaultdict(
         lambda: {"belopp": Decimal("0.00"), "andamal": set(), "typ": set()})
@@ -115,7 +135,7 @@ def avstam_kollekt(transaktioner: list[Transaktion],
             d["typ"].add(r.kollekttyp)
 
     forsamlingar = sorted({f for f, _ in swish} | {f for f, _ in kob})
-    resultat = KollektAvstamning()
+    resultat = KollektAvstamning(kob_intervall=kob_intervall)
     for fors in forsamlingar:
         fa = ForsamlingAvstamning(forsamling=fors)
         datum_nycklar = sorted(
@@ -131,7 +151,9 @@ def avstam_kollekt(transaktioner: list[Transaktion],
             typ = _typ_bokstav((s["typ"] if s else set()) | (k["typ"] if k else set()))
             diff = s_belopp - k_belopp
 
-            status, orsak = _bedom_kollekt(s_belopp, k_belopp, s_and, k_and, typ)
+            status, orsak = _bedom_kollekt(
+                s_belopp, k_belopp, s_and, k_and, typ, datum, kob_intervall,
+            )
             fa.rader.append(AvstamRad(
                 forsamling=fors, datum=datum, swish_andamal=s_and, kob_andamal=k_and,
                 kollekttyp=typ, swish=s_belopp, kob=k_belopp, diff=diff,
@@ -141,7 +163,9 @@ def avstam_kollekt(transaktioner: list[Transaktion],
     return resultat
 
 
-def _bedom_kollekt(s: Decimal, k: Decimal, s_and: str, k_and: str, typ: str):
+def _bedom_kollekt(s: Decimal, k: Decimal, s_and: str, k_and: str, typ: str,
+                   datum: date | None = None,
+                   kob_intervall: Datumintervall | None = None):
     if s > 0 and k > 0:
         if s == k:
             if s_and and k_and and normalisera_andamal(s_and) != normalisera_andamal(k_and):
@@ -149,6 +173,12 @@ def _bedom_kollekt(s: Decimal, k: Decimal, s_and: str, k_and: str, typ: str):
             return "ok", ""
         return "diff", "beloppsdiff mot KOB"
     if s > 0 and k == 0:
+        if datum is not None and kob_intervall is not None and not kob_intervall.innehaller(datum):
+            return (
+                "diff",
+                "datumet ligger utanför KOB-exportens intervall - hämta om exporten "
+                "med ett större datumintervall",
+            )
         if typ in ("R", "S"):
             return "diff", "saknas i KOB - ej kompletterad (R/S ägs av andra)"
         return "diff", "saknas i KOB - ej registrerad eller annat tillfälle"
@@ -180,6 +210,7 @@ class GavaAvstamRad:
 class GavaAvstamning:
     rader: list[GavaAvstamRad] = field(default_factory=list)
     omappade: list[KobGavaDetalj] = field(default_factory=list)
+    kob_intervall: Datumintervall | None = None
 
     @property
     def antal_diffar(self) -> int:
@@ -195,6 +226,9 @@ def _matcha_verksamhet(rad: KobInsamlingsrad) -> str | None:
 
 
 def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAvstamning:
+    kob_datum = [r.datum for r in kob_rader if r.datum is not None]
+    kob_intervall = Datumintervall(min(kob_datum), max(kob_datum)) if kob_datum else None
+
     # Kontototalen = allman manadssumma + per andamal + utbrutna sarskilda poster.
     swish: dict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
     for p in underlag.gava_manad:
@@ -218,7 +252,7 @@ def avstam_gava(underlag: Underlag, kob_rader: list[KobInsamlingsrad]) -> GavaAv
         kob[verksamhet] += r.belopp
         detaljer[verksamhet].append(detalj)
 
-    resultat = GavaAvstamning(omappade=omappade)
+    resultat = GavaAvstamning(omappade=omappade, kob_intervall=kob_intervall)
     for verksamhet in sorted(set(swish) | set(kob)):
         s, k = swish[verksamhet], kob[verksamhet]
         diff = s - k
