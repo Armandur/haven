@@ -158,6 +158,21 @@ def test_post_kvittera_flyttar_till_kvitterade(kalendermiljo):
     assert "avvikande riks-/stiftskollektdag" not in r2.text
 
 
+def test_notering_sparas_visas_och_kan_uppdateras(kalendermiljo):
+    nyckel = hitta_avvikelser(_RADER)[0].nyckel
+    # Strangar som inte kan kollidera med placeholder-texten i formularet
+    r = client.post("/kalender/kollektdag/kvittera",
+                    data={"nyckel": nyckel, "notering": "Domkapitlet dnr 2026-117"})
+    assert r.status_code == 200
+    assert "Domkapitlet dnr 2026-117" in r.text
+
+    # Spara-knappen i kvitterade-listan gar mot samma route - upsert uppdaterar
+    r2 = client.post("/kalender/kollektdag/kvittera",
+                     data={"nyckel": nyckel, "notering": "Reviderad dnr 2026-118"})
+    assert "Reviderad dnr 2026-118" in r2.text
+    assert "Domkapitlet dnr 2026-117" not in r2.text
+
+
 def test_post_angra_visar_avvikelsen_igen(kalendermiljo):
     nyckel = hitta_avvikelser(_RADER)[0].nyckel
     client.post("/kalender/kollektdag/kvittera", data={"nyckel": nyckel})

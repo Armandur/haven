@@ -102,6 +102,7 @@ class KollektdagKvittering(Base):
     __tablename__ = "kollektdag_kvittering"
 
     nyckel: Mapped[str] = mapped_column(String, primary_key=True)
+    notering: Mapped[str] = mapped_column(String, default="")   # ex "Beviljat av domkapitlet"
     av_vem: Mapped[str] = mapped_column(String, default="")
     tidpunkt: Mapped[str] = mapped_column(String, default="")
 
@@ -192,6 +193,7 @@ def _migrera() -> None:
         "overstyrning": [("tx_ids", "TEXT DEFAULT ''")],
         "sarskild_post": [("tx_ids", "TEXT DEFAULT ''")],
         "rapport": [("tx_ids", "TEXT DEFAULT ''")],
+        "kollektdag_kvittering": [("notering", "TEXT DEFAULT ''")],
         "regelhistorik": [
             ("scope", "TEXT DEFAULT ''"), ("tx_ids", "TEXT DEFAULT ''"),
             ("meddelande_filter", "TEXT DEFAULT ''"),
@@ -235,20 +237,23 @@ def angra(nyckel: str) -> None:
 
 # --- Kvitterade kollektdagsavvikelser ---------------------------------------
 
-def kvitterade_kollektdagar() -> set[str]:
+def kvitterade_kollektdagar() -> dict[str, str]:
+    """Nyckel -> notering for alla kvitterade avvikelser."""
     with Session(engine) as s:
-        rader = s.scalars(select(KollektdagKvittering.nyckel)).all()
-    return set(rader)
+        rader = s.scalars(select(KollektdagKvittering)).all()
+        return {r.nyckel: r.notering for r in rader}
 
 
-def kvittera_kollektdag(nyckel: str, av_vem: str = "") -> None:
+def kvittera_kollektdag(nyckel: str, notering: str = "", av_vem: str = "") -> None:
+    """Upsert - anropas aven for att uppdatera noteringen pa en kvittering."""
     now = _now()
     with Session(engine) as s:
         rad = s.get(KollektdagKvittering, nyckel)
         if rad is None:
-            s.add(KollektdagKvittering(nyckel=nyckel, av_vem=av_vem, tidpunkt=now))
+            s.add(KollektdagKvittering(nyckel=nyckel, notering=notering,
+                                       av_vem=av_vem, tidpunkt=now))
         else:
-            rad.av_vem, rad.tidpunkt = av_vem, now
+            rad.notering, rad.av_vem, rad.tidpunkt = notering, av_vem, now
         s.commit()
 
 

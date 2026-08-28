@@ -295,6 +295,7 @@ def kalender_vy(request: Request):
         "grupper": grupper, "kalenderfil": KALENDER_FIL, "finns": finns,
         "avvikelser": [a for a in alla_avvikelser if a.nyckel not in kvitterade],
         "kvitterade_avvikelser": [a for a in alla_avvikelser if a.nyckel in kvitterade],
+        "kvitteringsnoteringar": kvitterade,
     })
 
 
@@ -305,8 +306,9 @@ def _redir_kalender(request: Request):
 
 
 @router.post("/kalender/kollektdag/kvittera")
-async def kvittera_kollektdag_route(request: Request, nyckel: str = Form(...)):
-    kvittera_kollektdag(nyckel)
+async def kvittera_kollektdag_route(request: Request, nyckel: str = Form(...),
+                                    notering: str = Form("")):
+    kvittera_kollektdag(nyckel, notering.strip())
     return _redir_kalender(request)
 
 

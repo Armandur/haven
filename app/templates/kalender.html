@@ -27,8 +27,10 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
         <td style="white-space: nowrap;">{{ a.majoritetsdatum }} ({{ a.majoritet_antal }} församlingar)</td>
         <td style="white-space: nowrap;">{{ a.forsamling }}: {{ a.datum }}</td>
         <td>
-          <form method="post" action="/kalender/kollektdag/kvittera{% if vald %}?fil={{ vald|urlencode }}{% endif %}">
+          <form method="post" action="/kalender/kollektdag/kvittera{% if vald %}?fil={{ vald|urlencode }}{% endif %}"
+                class="hv-kvitteraform">
             <input type="hidden" name="nyckel" value="{{ a.nyckel }}">
+            <input type="text" name="notering" placeholder="Notering, t.ex. Beviljat av domkapitlet">
             <button type="submit" class="secondary outline">Kvittera</button>
           </form>
         </td>
@@ -43,7 +45,7 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
 <details class="hv-kalgrupp">
   <summary><strong>Kvitterade kollektdagsavvikelser</strong> <span class="hv-swish">{{ kvitterade_avvikelser|length }} st</span></summary>
   <figure><table>
-    <thead><tr><th>Typ</th><th>Ändamål</th><th>Majoritet</th><th>Avvikande</th><th></th></tr></thead>
+    <thead><tr><th>Typ</th><th>Ändamål</th><th>Majoritet</th><th>Avvikande</th><th>Notering</th><th></th></tr></thead>
     <tbody>
       {% for a in kvitterade_avvikelser %}
       <tr>
@@ -51,6 +53,15 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
         <td>{{ a.andamal }}</td>
         <td style="white-space: nowrap;">{{ a.majoritetsdatum }} ({{ a.majoritet_antal }} församlingar)</td>
         <td style="white-space: nowrap;">{{ a.forsamling }}: {{ a.datum }}</td>
+        <td>
+          <form method="post" action="/kalender/kollektdag/kvittera{% if vald %}?fil={{ vald|urlencode }}{% endif %}"
+                class="hv-kvitteraform">
+            <input type="hidden" name="nyckel" value="{{ a.nyckel }}">
+            <input type="text" name="notering" value="{{ kvitteringsnoteringar.get(a.nyckel, '') }}"
+                   placeholder="Notering, t.ex. Beviljat av domkapitlet">
+            <button type="submit" class="secondary outline">Spara</button>
+          </form>
+        </td>
         <td>
           <form method="post" action="/kalender/kollektdag/angra{% if vald %}?fil={{ vald|urlencode }}{% endif %}">
             <input type="hidden" name="nyckel" value="{{ a.nyckel }}">

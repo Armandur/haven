@@ -306,6 +306,14 @@ p.hv-badge { white-space: normal; }
 }
 .hv-stage-knappar { display: flex; gap: 0.6rem; margin-top: 0.9rem; }
 .hv-stage-knappar button { width: auto; margin: 0; }
+
+/* Kvitteringsformular i kollektdagsnotisen: noteringsfalt + knapp pa en rad */
+.hv-kvitteraform { display: flex; gap: 0.4rem; margin: 0; align-items: center; }
+.hv-kvitteraform input[type="text"] {
+  margin: 0; padding: 0.25rem 0.5rem; height: auto; font-size: 0.82rem;
+  min-width: 11rem;
+}
+.hv-kvitteraform button { width: auto; margin: 0; padding: 0.3rem 0.7rem; white-space: nowrap; }
 .hv-filelist {
   list-style: none; margin: 0.75rem 0 0; padding: 0; max-height: 45vh; overflow-y: auto;
   text-align: left; font-size: 0.85rem;
