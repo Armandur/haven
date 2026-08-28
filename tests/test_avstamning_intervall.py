@@ -130,7 +130,8 @@ def test_template_visar_bada_intervallvarningarna():
         rapport_intervall=rapport_intervall,
     )
     vy = SimpleNamespace(resultat=SimpleNamespace(rapport=SimpleNamespace(period="2026-05")))
-    request = SimpleNamespace(url=SimpleNamespace(path="/avstamning"))
+    request = SimpleNamespace(url=SimpleNamespace(path="/avstamning"),
+                              state=SimpleNamespace(saknad_rapportfil=None))
 
     html = templates.get_template("avstamning.html").render(
         request=request, vy=vy, avst=avst, vald=None,

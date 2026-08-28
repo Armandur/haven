@@ -25,19 +25,25 @@
            {% if nuv == mal %}aria-current="page"{% endif %}>{{ text }}</a>
       {% endmacro %}
       <nav>
-        {{ navlank("/status", "Status", p) }}
+        {{ navlank("/", "Översikt", p) }}
         {{ navlank("/ko", "Arbetskö", p) }}
         {{ navlank("/underlag", "Underlag", p) }}
         {{ navlank("/avstamning", "Avstämning", p) }}
-        {{ navlank("/kalender", "Kalender", p) }}
         {{ navlank("/justeringar", "Justeringar", p) }}
+        {{ navlank("/status", "Status", p) }}
         {{ navlank("/omatchade", "Omatchade", p) }}
+        {{ navlank("/kalender", "Kalender", p) }}
         {{ navlank("/konfig", "Konfig", p) }}
         <button id="temavaljare" class="tema-btn" type="button" aria-label="Växla tema"></button>
       </nav>
     </div>
   </header>
   <main class="container">
+    {% if request.state.saknad_rapportfil %}
+      <article>
+        <p class="hv-badge varning">Den begärda rapporten "{{ request.state.saknad_rapportfil }}" saknas. Senaste rapporten visas i stället.</p>
+      </article>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
   <script src="/static/app.js"></script>

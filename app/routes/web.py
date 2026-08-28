@@ -53,11 +53,13 @@ router = APIRouter()
 
 
 def _aktuell_fil(request: Request) -> Path | None:
+    request.state.saknad_rapportfil = None
     namn = request.query_params.get("fil")
     if namn:
         p = DATA_DIR / namn
         if p.exists():
             return p
+        request.state.saknad_rapportfil = namn
     return standard_rapportfil()
 
 
@@ -226,8 +228,9 @@ def status(request: Request):
 
 @router.get("/konfig")
 def konfig(request: Request):
+    fil = _aktuell_fil(request)
     return templates.TemplateResponse(request, "konfig.html", {
-        "vald": request.query_params.get("fil"),
+        "vald": fil.name if fil else None,
         "mottagare": las_mottagare_konfig(endast_aktiva=False),
         "forsamlingar": las_forsamlingar_konfig(),
         "forhandsvald_namn": request.query_params.get("namn", ""),
