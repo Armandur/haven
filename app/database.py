@@ -96,6 +96,16 @@ class SarskildPostRad(Base):
     tidpunkt: Mapped[str] = mapped_column(String, default="")
 
 
+class KollektdagKvittering(Base):
+    """Kvitterad (bekraftad) avvikande riks-/stiftskollektdag (spec TASK-1530).
+    Nyckel: forsamling + datum + typ + normaliserat andamal (se kollektdagar.py)."""
+    __tablename__ = "kollektdag_kvittering"
+
+    nyckel: Mapped[str] = mapped_column(String, primary_key=True)
+    av_vem: Mapped[str] = mapped_column(String, default="")
+    tidpunkt: Mapped[str] = mapped_column(String, default="")
+
+
 class ForsamlingRad(Base):
     """Redigerbar forsamlingskonfig (froad fran config.FORSAMLINGAR)."""
     __tablename__ = "forsamling"
@@ -218,6 +228,33 @@ def bekrafta(nyckel: str, period: str, av_vem: str = "") -> None:
 def angra(nyckel: str) -> None:
     with Session(engine) as s:
         rad = s.get(Bekraftelse, nyckel)
+        if rad is not None:
+            s.delete(rad)
+            s.commit()
+
+
+# --- Kvitterade kollektdagsavvikelser ---------------------------------------
+
+def kvitterade_kollektdagar() -> set[str]:
+    with Session(engine) as s:
+        rader = s.scalars(select(KollektdagKvittering.nyckel)).all()
+    return set(rader)
+
+
+def kvittera_kollektdag(nyckel: str, av_vem: str = "") -> None:
+    now = _now()
+    with Session(engine) as s:
+        rad = s.get(KollektdagKvittering, nyckel)
+        if rad is None:
+            s.add(KollektdagKvittering(nyckel=nyckel, av_vem=av_vem, tidpunkt=now))
+        else:
+            rad.av_vem, rad.tidpunkt = av_vem, now
+        s.commit()
+
+
+def angra_kollektdag(nyckel: str) -> None:
+    with Session(engine) as s:
+        rad = s.get(KollektdagKvittering, nyckel)
         if rad is not None:
             s.delete(rad)
             s.commit()

@@ -18,7 +18,10 @@ from app.config import (
 )
 from app.database import (
     angra,
+    angra_kollektdag,
     bekrafta,
+    kvittera_kollektdag,
+    kvitterade_kollektdagar,
     las_forsamlingar_konfig,
     las_historik,
     las_mottagare_konfig,
@@ -36,6 +39,7 @@ from app.database import (
     ta_bort_sarskild,
     uppdatera_overstyrning,
 )
+from app.core.kollektdagar import hitta_avvikelser
 from app.core.regler import Overstyrning, SarskildPost
 from app.services.import_service import (
     bekrafta_stagad,
@@ -278,14 +282,38 @@ def kalender_vy(request: Request):
     kalfil = DATA_DIR / KALENDER_FIL
     finns = kalfil.exists()
     grupper: dict = {}
+    alla_rader = []
     if finns:
         for r in las_kalender(kalfil):
             grupper.setdefault(r.forsamling, []).append(r)
+            alla_rader.append(r)
+    kvitterade = kvitterade_kollektdagar()
+    alla_avvikelser = hitta_avvikelser(alla_rader)
     fil = _aktuell_fil(request)
     return templates.TemplateResponse(request, "kalender.html", {
         "vald": fil.name if fil else None,
         "grupper": grupper, "kalenderfil": KALENDER_FIL, "finns": finns,
+        "avvikelser": [a for a in alla_avvikelser if a.nyckel not in kvitterade],
+        "kvitterade_avvikelser": [a for a in alla_avvikelser if a.nyckel in kvitterade],
     })
+
+
+def _redir_kalender(request: Request):
+    fil = request.query_params.get("fil")
+    suffix = f"?fil={fil}" if fil else ""
+    return RedirectResponse(f"/kalender{suffix}", status_code=302)
+
+
+@router.post("/kalender/kollektdag/kvittera")
+async def kvittera_kollektdag_route(request: Request, nyckel: str = Form(...)):
+    kvittera_kollektdag(nyckel)
+    return _redir_kalender(request)
+
+
+@router.post("/kalender/kollektdag/angra")
+async def angra_kollektdag_route(request: Request, nyckel: str = Form(...)):
+    angra_kollektdag(nyckel)
+    return _redir_kalender(request)
 
 
 @router.get("/omatchade")

@@ -12,6 +12,58 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
   <a href="/">översikten</a>.
 </article>
 {% else %}
+
+{% if avvikelser %}
+<article>
+  <p class="hv-badge varning">{{ avvikelser|length }} avvikande riks-/stiftskollektdag(ar)</p>
+  <p class="hv-meta">Beslutat byte av kollektdag? Kvittera för att sluta bli påmind.</p>
+  <figure><table>
+    <thead><tr><th>Typ</th><th>Ändamål</th><th>Majoritet</th><th>Avvikande</th><th></th></tr></thead>
+    <tbody>
+      {% for a in avvikelser %}
+      <tr>
+        <td><span class="hv-badge typ-{{ a.typ.value|lower }}">{{ a.typ.value }}</span></td>
+        <td>{{ a.andamal }}</td>
+        <td style="white-space: nowrap;">{{ a.majoritetsdatum }} ({{ a.majoritet_antal }} församlingar)</td>
+        <td style="white-space: nowrap;">{{ a.forsamling }}: {{ a.datum }}</td>
+        <td>
+          <form method="post" action="/kalender/kollektdag/kvittera{% if vald %}?fil={{ vald|urlencode }}{% endif %}">
+            <input type="hidden" name="nyckel" value="{{ a.nyckel }}">
+            <button type="submit" class="secondary outline">Kvittera</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></figure>
+</article>
+{% endif %}
+
+{% if kvitterade_avvikelser %}
+<details class="hv-kalgrupp">
+  <summary><strong>Kvitterade kollektdagsavvikelser</strong> <span class="hv-swish">{{ kvitterade_avvikelser|length }} st</span></summary>
+  <figure><table>
+    <thead><tr><th>Typ</th><th>Ändamål</th><th>Majoritet</th><th>Avvikande</th><th></th></tr></thead>
+    <tbody>
+      {% for a in kvitterade_avvikelser %}
+      <tr>
+        <td><span class="hv-badge typ-{{ a.typ.value|lower }}">{{ a.typ.value }}</span></td>
+        <td>{{ a.andamal }}</td>
+        <td style="white-space: nowrap;">{{ a.majoritetsdatum }} ({{ a.majoritet_antal }} församlingar)</td>
+        <td style="white-space: nowrap;">{{ a.forsamling }}: {{ a.datum }}</td>
+        <td>
+          <form method="post" action="/kalender/kollektdag/angra{% if vald %}?fil={{ vald|urlencode }}{% endif %}">
+            <input type="hidden" name="nyckel" value="{{ a.nyckel }}">
+            <button type="submit" class="secondary outline">Ångra</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></figure>
+</details>
+{% endif %}
+
 {% for forsamling, rader in grupper.items() %}
 <details class="hv-kalgrupp">
   <summary><strong>{{ forsamling }}</strong> <span class="hv-swish">{{ rader|length }} tillfällen</span></summary>
