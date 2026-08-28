@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 from app.config import (
@@ -36,7 +36,12 @@ from app.database import (
     uppdatera_overstyrning,
 )
 from app.core.regler import Overstyrning, SarskildPost
-from app.services.import_service import ta_emot
+from app.services.import_service import (
+    bekrafta_stagad,
+    kassera_stagad,
+    stagea,
+    ta_emot,
+)
 from app.services.konfig_service import ladda_konfig_till_minne
 from app.deps import templates
 from app.services.avstamning_service import kor_avstamning
@@ -104,6 +109,40 @@ async def importera(
     if "application/json" in request.headers.get("accept", ""):
         return JSONResponse({"resultat": resultat})
     return RedirectResponse("/", status_code=302)
+
+
+@router.post("/import/stage")
+async def import_stage(fil: UploadFile = File(...)):
+    """Steg 1 i slappzonen: spara i staging och identifiera sorten."""
+    innehall = await fil.read()
+    try:
+        info = stagea(fil.filename or "", innehall)
+    except ValueError as e:
+        return JSONResponse({"ok": False, "fel": str(e)}, status_code=400)
+    return JSONResponse({"ok": True, **info})
+
+
+@router.post("/import/bekrafta")
+async def import_bekrafta(payload: dict = Body(...)):
+    """Steg 2: validera stagade filer som vald sort och flytta till data/."""
+    resultat = []
+    for val in payload.get("val", []):
+        token = str(val.get("token", ""))
+        sort = str(val.get("sort", ""))
+        try:
+            namn = bekrafta_stagad(token, sort)
+            resultat.append({"token": token, "ok": True, "filnamn": namn})
+        except ValueError as e:
+            resultat.append({"token": token, "ok": False, "fel": str(e)})
+    return JSONResponse({"resultat": resultat})
+
+
+@router.post("/import/kassera")
+async def import_kassera(payload: dict = Body(...)):
+    """Avbrutet flode: ta bort stagade filer."""
+    for token in payload.get("tokens", []):
+        kassera_stagad(str(token))
+    return JSONResponse({"ok": True})
 
 
 @router.get("/ko")

@@ -211,6 +211,45 @@ p.hv-badge { white-space: normal; }
 #upload-overlay[hidden] { display: none; }
 #upload-overlay article { max-width: 32rem; width: 100%; text-align: center; margin: 0; }
 #upload-overlay progress { width: 100%; }
+
+/* Slappzon (nollstall Picos [role=button]-utseende, aven --pico-color som
+   annars arvs som vit text ner i zonens stycken) */
+#dropzone {
+  background: none; color: inherit; box-shadow: none;
+  --pico-color: inherit;
+  border: 2px dashed var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  padding: 1.25rem 1rem; text-align: center; cursor: pointer;
+  margin-bottom: 1.25rem;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+#dropzone > * { pointer-events: none; }   /* barnen ska inte stjala drag-event */
+#dropzone p { margin: 0.15rem 0; }
+#dropzone:focus-visible { border-color: var(--hv-accent); outline: none; }
+#dropzone.dragover {
+  border-color: var(--hv-accent);
+  border-style: solid;
+  background: var(--pico-primary-focus);
+}
+
+/* Kontrollera filtyperna-kortet (slappzonens steg 2). Filnamnet tar all
+   restbredd och statusen har fast kolumnbredd, sa dropdownarna hamnar pa
+   samma vertikal oavsett filnamnets och statustextens langd. */
+#stage-kort .hv-filelist { margin-top: 0; }
+#stage-filelist .ufile-name { flex: 1 1 auto; }
+#stage-filelist .ufile-status { min-width: 10.5rem; }
+@media (max-width: 576px) {
+  /* Smal skarm: filnamnet pa egen rad, dropdown + status pa raden under */
+  #stage-filelist .ufile-rad { flex-wrap: wrap; }
+  #stage-filelist .ufile-name { flex: 1 1 100%; }
+  #stage-filelist .ufile-status { min-width: 0; margin-left: auto; }
+}
+.ufile-select {
+  flex: none; width: auto; margin: 0; font-size: 0.82rem;
+  padding: 0.15rem 1.9rem 0.15rem 0.5rem; height: auto;
+}
+.hv-stage-knappar { display: flex; gap: 0.6rem; margin-top: 0.9rem; }
+.hv-stage-knappar button { width: auto; margin: 0; }
 .hv-filelist {
   list-style: none; margin: 0.75rem 0 0; padding: 0; max-height: 45vh; overflow-y: auto;
   text-align: left; font-size: 0.85rem;
