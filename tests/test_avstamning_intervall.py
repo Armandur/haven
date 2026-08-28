@@ -114,6 +114,67 @@ def test_kollektrad_for_manadsskiftestillfalle_behalls_nar_swish_har_tillfallet(
     assert rad.status == "ok"
 
 
+def test_typskillnad_med_stammande_belopp_ger_notis():
+    datum = date(2026, 6, 28)
+    transaktion = replace(
+        _transaktion(datum),
+        andamal="Act Svenska kyrkan",
+        kollekttyp=Kollekttyp.R,
+    )
+    kob = replace(
+        _kob_kollekt(datum),
+        andamal="Act Svenska kyrkan",
+        kollekttyp="Förskollekt nationell org",
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("100.00"),
+    )
+
+    avst = avstam_kollekt([transaktion], [kob])
+
+    rad = next(r for f in avst.forsamlingar for r in f.rader)
+    assert rad.status == "notis"
+    assert rad.diff == Decimal("0.00")
+    assert rad.orsak == (
+        "belopp stämmer, men söktypen skiljer: kalendern säger Rikskollekt, "
+        "KOB har Förskollekt nationell org"
+    )
+
+
+def test_f_och_forsamlingskollekt_ar_samma_soktyp():
+    datum = date(2026, 5, 17)
+    kob = replace(
+        _kob_kollekt(datum),
+        kollekttyp="Församlingskollekt",
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("100.00"),
+    )
+
+    avst = avstam_kollekt([_transaktion(datum)], [kob])
+
+    rad = next(r for f in avst.forsamlingar for r in f.rader)
+    assert rad.status == "ok"
+    assert rad.orsak == ""
+
+
+def test_f_till_nationell_org_matchar_forskollekt_nationell_org():
+    datum = date(2026, 5, 17)
+    transaktion = replace(_transaktion(datum), andamal="Act Svenska kyrkan")
+    kob = replace(
+        _kob_kollekt(datum),
+        andamal="Act Svenska kyrkan",
+        kollekttyp="Förskollekt nationell org",
+        inbetalningsmetod="Swish 1",
+        belopp=Decimal("100.00"),
+    )
+
+    avst = avstam_kollekt([transaktion], [kob])
+
+    rad = next(r for f in avst.forsamlingar for r in f.rader)
+    assert rad.kollekttyp == "N"
+    assert rad.status == "ok"
+    assert rad.orsak == ""
+
+
 def test_kollektrad_utan_datum_och_utan_intervall_behandlas_som_tidigare():
     utan_datum = replace(
         _kob_kollekt(date(2026, 5, 17)),

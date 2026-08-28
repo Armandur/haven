@@ -15,7 +15,13 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-from app.config import GAVA_NYCKELORD, Kategori, Kollekttyp
+from app.config import (
+    GAVA_NYCKELORD,
+    Kategori,
+    Kollekttyp,
+    ar_nationell_org,
+    kollekttyp_namn,
+)
 from app.core.aggregate import Underlag
 from app.core.models import KobInsamlingsrad, KobKollektrad, Transaktion
 from app.core.normalize import normalisera_andamal
@@ -47,7 +53,7 @@ class AvstamRad:
     datum: date | None
     swish_andamal: str
     kob_andamal: str
-    kollekttyp: str                  # "F" | "R" | "S" | ""
+    kollekttyp: str                  # "F" | "R" | "S" | "N" | ""
     swish: Decimal
     kob: Decimal
     diff: Decimal                    # swish - kob
@@ -97,11 +103,33 @@ class KollektAvstamning:
         return sum(1 for f in self.forsamlingar for r in f.rader if r.status == "diff")
 
 
-def _typ_bokstav(typ_set: set) -> str:
-    for t in ("S", "R", "F"):
+_KOB_TYP_TILL_KOD = {
+    kollekttyp_namn(kod).casefold(): kod
+    for kod in ("F", "R", "S", "N")
+}
+
+
+def _normalisera_typer(typer: set[str]) -> set[str]:
+    normaliserade = set()
+    for typ in typer:
+        text = typ.strip()
+        kod = text.upper()
+        if kod in ("F", "R", "S", "N"):
+            normaliserade.add(kod)
+        elif text.casefold() in _KOB_TYP_TILL_KOD:
+            normaliserade.add(_KOB_TYP_TILL_KOD[text.casefold()])
+    return normaliserade
+
+
+def _typ_bokstav(typ_set: set[str]) -> str:
+    for t in ("S", "R", "N", "F"):
         if t in typ_set:
             return t
     return ""
+
+
+def _typbeskrivning(typer: set[str]) -> str:
+    return ", ".join(kollekttyp_namn(t) for t in sorted(typer))
 
 
 def avstam_kollekt(
@@ -124,7 +152,10 @@ def avstam_kollekt(
         if t.andamal:
             d["andamal"].add(t.andamal)
         if t.kollekttyp:
-            d["typ"].add(t.kollekttyp.value)
+            typ = t.kollekttyp.value
+            if typ == "F" and ar_nationell_org(t.andamal):
+                typ = "N"
+            d["typ"].add(typ)
 
     # KOB-sidan: bara Swish 1-rader, nyckel (forsamling, tillfallesdatum).
     kob: dict[tuple, dict] = defaultdict(
@@ -173,11 +204,14 @@ def avstam_kollekt(
             k_belopp = k["belopp"] if k else Decimal("0.00")
             s_and = ", ".join(sorted(s["andamal"])) if s else ""
             k_and = ", ".join(sorted(k["andamal"])) if k else ""
-            typ = _typ_bokstav((s["typ"] if s else set()) | (k["typ"] if k else set()))
+            s_typer = _normalisera_typer(s["typ"] if s else set())
+            k_typer = _normalisera_typer(k["typ"] if k else set())
+            typ = _typ_bokstav(s_typer | k_typer)
             diff = s_belopp - k_belopp
 
             status, orsak = _bedom_kollekt(
-                s_belopp, k_belopp, s_and, k_and, typ, datum, kob_intervall,
+                s_belopp, k_belopp, s_and, k_and, typ, s_typer, k_typer,
+                datum, kob_intervall,
             )
             fa.rader.append(AvstamRad(
                 forsamling=fors, datum=datum, swish_andamal=s_and, kob_andamal=k_and,
@@ -189,10 +223,17 @@ def avstam_kollekt(
 
 
 def _bedom_kollekt(s: Decimal, k: Decimal, s_and: str, k_and: str, typ: str,
+                   s_typer: set[str], k_typer: set[str],
                    datum: date | None = None,
                    kob_intervall: Datumintervall | None = None):
     if s > 0 and k > 0:
         if s == k:
+            if s_typer and k_typer and s_typer != k_typer:
+                return (
+                    "notis",
+                    "belopp stämmer, men söktypen skiljer: kalendern säger "
+                    f"{_typbeskrivning(s_typer)}, KOB har {_typbeskrivning(k_typer)}",
+                )
             if s_and and k_and and normalisera_andamal(s_and) != normalisera_andamal(k_and):
                 return "notis", "belopp stämmer, ändamålstext skiljer mot KOB"
             return "ok", ""
