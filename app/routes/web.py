@@ -77,9 +77,11 @@ def _vy(request: Request) -> KoVy:
 @router.get("/")
 def dashboard(request: Request):
     fil = _aktuell_fil(request)
+    # Nyast forst - filnamnen bar ar-manad sa omvand bokstavsordning ger det
     rapporter = sorted(
-        f.name for f in DATA_DIR.glob("*.xlsx")
-        if f.name != KALENDER_FIL and not f.name.startswith(".")
+        (f.name for f in DATA_DIR.glob("*.xlsx")
+         if f.name != KALENDER_FIL and not f.name.startswith(".")),
+        reverse=True,
     ) if DATA_DIR.exists() else []
     if fil is None:
         return templates.TemplateResponse(request, "dashboard.html", {
