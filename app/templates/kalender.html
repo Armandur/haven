@@ -13,8 +13,10 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
 </article>
 {% else %}
 
-{% if avvikelser %}
+{% if avvikelser or kvitterade_avvikelser %}
 <article>
+  <header><strong>Kollektdagsavvikelser</strong></header>
+  {% if avvikelser %}
   <p class="hv-badge varning">{{ avvikelser|length }} avvikande riks-/stiftskollektdag(ar)</p>
   <p class="hv-meta">Beslutat byte av kollektdag? Kvittera för att sluta bli påmind.</p>
   <figure><table>
@@ -38,12 +40,13 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
       {% endfor %}
     </tbody>
   </table></figure>
-</article>
-{% endif %}
+  {% else %}
+  <p class="hv-badge klar">✓ Inga okvitterade avvikelser</p>
+  {% endif %}
 
-{% if kvitterade_avvikelser %}
-<details class="hv-kalgrupp">
-  <summary><strong>Kvitterade kollektdagsavvikelser</strong> <span class="hv-swish">{{ kvitterade_avvikelser|length }} st</span></summary>
+  {% if kvitterade_avvikelser %}
+  <details class="hv-kvitterade">
+  <summary>Kvitterade avvikelser ({{ kvitterade_avvikelser|length }})</summary>
   <figure><table>
     <thead><tr><th>Typ</th><th>Ändamål</th><th>Majoritet</th><th>Avvikande</th><th>Notering</th><th></th></tr></thead>
     <tbody>
@@ -72,9 +75,13 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
       {% endfor %}
     </tbody>
   </table></figure>
-</details>
+  </details>
+  {% endif %}
+</article>
 {% endif %}
 
+<article>
+  <header><strong>Kalender per församling</strong></header>
 {% for forsamling, rader in grupper.items() %}
 <details class="hv-kalgrupp">
   <summary><strong>{{ forsamling }}</strong> <span class="hv-swish">{{ rader|length }} tillfällen</span></summary>
@@ -94,5 +101,6 @@ Ladda upp en ny (t.ex. för ett nytt år) på <a href="/">översikten</a>.</p>
   </table></figure>
 </details>
 {% endfor %}
+</article>
 {% endif %}
 {% endblock %}

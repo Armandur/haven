@@ -150,7 +150,7 @@ def test_post_kvittera_flyttar_till_kvitterade(kalendermiljo):
     nyckel = hitta_avvikelser(_RADER)[0].nyckel
     r = client.post("/kalender/kollektdag/kvittera", data={"nyckel": nyckel})
     assert r.status_code == 200   # foljde redirect till /kalender
-    assert "Kvitterade kollektdagsavvikelser" in r.text
+    assert "Kvitterade avvikelser" in r.text
     assert "Ångra" in r.text
 
     # Notisrutan med avvikelsen ska inte langre finnas
@@ -179,4 +179,4 @@ def test_post_angra_visar_avvikelsen_igen(kalendermiljo):
     r = client.post("/kalender/kollektdag/angra", data={"nyckel": nyckel})
     assert r.status_code == 200
     assert "avvikande riks-/stiftskollektdag" in r.text
-    assert "Kvitterade kollektdagsavvikelser" not in r.text
+    assert "Kvitterade avvikelser" not in r.text

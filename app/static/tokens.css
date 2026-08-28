@@ -226,6 +226,14 @@ p.hv-badge { white-space: normal; }
 .hv-kalgrupp { margin-bottom: 0.5rem; }
 .hv-kalgrupp summary { cursor: pointer; padding: 0.4rem 0; font-size: 1.02rem; }
 
+/* Kvitterade avvikelser: diskret rad i avvikelskortet - ska INTE likna
+   forsamlingsgruppernas summary-rader */
+details.hv-kvitterade { margin: 0.75rem 0 0; }
+details.hv-kvitterade summary {
+  cursor: pointer; font-size: 0.85rem; font-weight: 600;
+  color: var(--hv-accent); padding: 0.2rem 0;
+}
+
 /* Break-in-kort for riks-/stiftskollekter */
 .hv-post.hv-breakin { margin-left: 0.75rem; border-left-width: 5px; background: var(--pico-card-sectioning-background-color); }
 .hv-post.typ-kant-r { border-left-color: var(--hv-typ-r); }
