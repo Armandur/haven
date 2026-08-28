@@ -24,6 +24,35 @@ En bearbetning på ett tillfälle med kollekt till Act gör en sökning på fel 
 
 ---
 
+## [P2][done] [haven] Filtrera KOB-rader utanför rapportens period ur avstämningens radjämförelse
+
+## Context
+Avstämningen jämför alla KOB-rader oavsett den valda rapportens period. Med en annan månads export listas KOB-tillfällen utanför rapportintervallet som "finns i KOB men ej i Swish (kontant, annat datum/ändamål?)" (22 sådana rader i maj-rapport/juni-export-fallet), och gåvosidan summerar KOB-belopp helt utan datumfilter så kontototalerna förorenas tyst. Bannern från TASK-1517 varnar för intervallglappet men radnivån vilseleder.
+
+## Acceptance criteria
+- [ ] avstam_kollekt tar rapportens Datumintervall; KOB-rader med tillfällesdatum utanför intervallet ingår varken i radjämförelsen eller i KOB-totalen. I stället redovisas antal och summa samlat (t.ex. fält utanfor_period_antal/utanfor_period_summa på KollektAvstamning).
+- [ ] avstam_gava filtrerar insamlingsraderna till rapportens intervall före summering, med samma slags samlade redovisning.
+- [ ] KOB-rader UTAN datum behandlas som idag (kan inte periodbestämmas - ingår i jämförelsen).
+- [ ] Utan rapportintervall (None) är beteendet exakt som idag.
+- [ ] Rader INOM perioden påverkas inte - kontant på samma tillfälle ska fortsatt synas som diff.
+- [ ] avstamning.html visar notisen när antal > 0, under både kollekt- och gåvosektionen: i stil med "N KOB-rader (X kr) ligger utanför rapportens period och visas inte - annan månads export?" (hv-meta eller hv-badge varning, konsekvent med befintlig stil).
+- [ ] Facittestet oförändrat grönt; nya tester för filtreringen (utanför/inom/utan datum/utan intervall).
+
+## Implementation hints
+- Signaturer: avstam_kollekt(transaktioner, kob_rader, rapport_intervall=None) och avstam_gava(underlag, kob_rader, rapport_intervall=None). kor_avstamning i app/services/avstamning_service.py räknar redan rapport_intervall - skicka in det.
+- Datumintervall.innehaller finns redan i reconcile.py.
+- Notisen i app/templates/avstamning.html nära intervallbannern per sektion.
+
+## Verification
+- `uv run --offline --with pytest --with httpx pytest tests/test_avstamning_intervall.py tests/test_maj2026.py`
+- Manuellt: /avstamning (maj-rapport + juni-exporter i data/) visar inte längre 2026-05-31..06-28-raderna som diffar, utan summanotisen; intervallbannern står kvar.
+
+- ID: `01M140B3EA6C7D6DFWHKPH8W04`
+- Type: improvement
+- Actor: ai:claude-fable-5
+
+---
+
 ## [P2][done] [haven] Synliggör dold sidledsscroll i breda tabeller på mobil
 
 ## Context
