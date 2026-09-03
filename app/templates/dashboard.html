@@ -75,8 +75,10 @@ eftersom de bygger på transaktions-ID som kan ha ändrats.</article>
       <div><small>Total inkommande</small><br><strong style="font-size:1.4rem;">{{ total|kr }} kr</strong></div>
       <div><small>Poster att registrera</small><br><strong style="font-size:1.4rem;">{{ vy.totalt }}</strong></div>
       <div><small>Omatchade rader</small><br>
+        <a href="/omatchade?fil={{ vald|urlencode }}" style="text-decoration: none;"
+           title="Visa de omatchade raderna">
         <strong style="font-size:1.4rem;" class="{% if vy.resultat.underlag.omatchade %}hv-badge varning{% endif %}">
-          {{ vy.resultat.underlag.omatchade|length }}</strong></div>
+          {{ vy.resultat.underlag.omatchade|length }}</strong></a></div>
     </div>
     <footer>
       <div class="hv-progress">
