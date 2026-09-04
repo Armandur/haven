@@ -148,7 +148,8 @@ h2 { font-size: 1.15rem; margin-top: 1.5rem; }
 .hv-post .hv-meta { color: var(--pico-muted-color); font-size: 0.85rem; }
 .hv-post table { margin: 0.5rem 0 0; font-size: 0.9rem; }
 .hv-post .hv-knappar { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
-.hv-post .hv-knappar button { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
+.hv-post .hv-knappar button,
+.hv-post .hv-knappar a[role="button"] { margin: 0; width: auto; padding: 0.4rem 0.9rem; }
 
 .hv-badge {
   display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;

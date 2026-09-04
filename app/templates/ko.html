@@ -17,10 +17,6 @@
     {% if p.andamal %}Ändamål: <strong>{{ p.andamal }}</strong> · {% endif %}
     {% if p.datum %}Tillfälle: {{ p.datum }} · {% endif %}
     {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
-    {% if p.grupp == 'F' and p.forsamling and p.transaktioner %}
-    · <a class="hv-swish" title="Öppna justeringar med raderna förvalda"
-         href="/justeringar?fil={{ vald|urlencode }}&ov_forsamling={{ p.forsamling|urlencode }}&forval_tx={{ p.transaktioner|map(attribute='tx_id')|join(',') }}#overstyrningar">justera raderna</a>
-    {% endif %}
     {% if p.kraver_manuell_andamal %} · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>{% endif %}
     {% if p.matchade_datum_str %}
     <br>Transaktionsdatum: {{ p.matchade_datum_str }}
@@ -126,6 +122,10 @@
       <input type="hidden" name="period" value="{{ period }}">
       <button type="submit" class="secondary outline">Ångra</button>
     </form>
+    {% if p.grupp == 'F' and p.forsamling and p.transaktioner %}
+    <a role="button" class="secondary outline" title="Öppna justeringar med raderna förvalda"
+       href="/justeringar?fil={{ vald|urlencode }}&ov_forsamling={{ p.forsamling|urlencode }}&forval_tx={{ p.transaktioner|map(attribute='tx_id')|join(',') }}#overstyrningar">Justera</a>
+    {% endif %}
   </div>
 </article>
 {% endmacro %}
