@@ -14,7 +14,7 @@
 </p>
 
 {# ===================== ÄNDAMÅLSÖVERSTYRNINGAR ===================== #}
-<h2>Ändamålsöverstyrningar</h2>
+<h2 id="overstyrningar">Ändamålsöverstyrningar</h2>
 <p class="hv-meta">Välj en församling, se dess kollektrader, filtrera vid behov och
 bocka för de rader vars föreslagna ändamål ska rättas (t.ex. en konsert utanför
 kalendern).</p>
@@ -58,6 +58,17 @@ kalendern).</p>
   vill du ändra urvalet, ta bort överstyrningen och skapa en ny.</p>
   <form method="post" action="/justeringar/overstyrning/uppdatera{{ q }}">
     <input type="hidden" name="id" value="{{ ov_redigera.id }}">
+    {% if redigera_tillfallen %}
+    <label>Hämta från kalendern
+      <select class="hv-tillfallepicker">
+        <option value="">- välj tillfälle, eller ändra fälten nedan -</option>
+        {% for k in redigera_tillfallen %}
+        <option data-andamal="{{ k.andamal }}" data-typ="{{ k.typ.value if k.typ else '' }}"
+                data-datum="{{ k.datum }}">{{ k.datum }} · {{ k.typ.value if k.typ else '?' }} · {{ k.andamal }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endif %}
     <div class="grid">
       <label>Nytt ändamål<input type="text" name="ny_andamal" required value="{{ ov_redigera.ny_andamal }}"></label>
       <label>Typ
@@ -112,7 +123,8 @@ kalendern).</p>
           {% for t in ov_rader %}
           <tr class="hv-rad" data-datum="{{ t.trans_datum }}" data-belopp="{{ t.belopp }}"
               data-meddelande="{{ t.meddelande|lower }}">
-            <td><input type="checkbox" class="hv-valj" name="tx_ids" value="{{ t.tx_id }}"></td>
+            <td><input type="checkbox" class="hv-valj" name="tx_ids" value="{{ t.tx_id }}"
+                       {% if t.tx_id in forval_tx %}checked{% endif %}></td>
             <td>{{ t.trans_datum }}</td>
             <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
             <td class="hv-swish">{{ t.meddelande }}</td>
@@ -124,6 +136,17 @@ kalendern).</p>
         </tbody>
       </table>
       </div>
+      {% if ov_tillfallen %}
+      <label style="margin-top:0.6rem;">Hämta från kalendern
+        <select class="hv-tillfallepicker">
+          <option value="">- välj tillfälle, eller fyll i fritt nedan -</option>
+          {% for k in ov_tillfallen %}
+          <option data-andamal="{{ k.andamal }}" data-typ="{{ k.typ.value if k.typ else '' }}"
+                  data-datum="{{ k.datum }}">{{ k.datum }} · {{ k.typ.value if k.typ else '?' }} · {{ k.andamal }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
       <div class="grid" style="margin-top:0.6rem;">
         <label>Nytt ändamål<input type="text" name="ny_andamal" required placeholder="t.ex. Musikverksamheten i Stigsjö församling"></label>
         <label>Typ<select name="ny_typ"><option value="">behåll</option><option>F</option><option>R</option><option>S</option></select></label>

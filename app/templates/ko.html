@@ -17,6 +17,10 @@
     {% if p.andamal %}Ändamål: <strong>{{ p.andamal }}</strong> · {% endif %}
     {% if p.datum %}Tillfälle: {{ p.datum }} · {% endif %}
     {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
+    {% if p.grupp == 'F' and p.forsamling and p.transaktioner %}
+    · <a class="hv-swish" title="Öppna justeringar med raderna förvalda"
+         href="/justeringar?fil={{ vald|urlencode }}&ov_forsamling={{ p.forsamling|urlencode }}&forval_tx={{ p.transaktioner|map(attribute='tx_id')|join(',') }}#overstyrningar">justera raderna</a>
+    {% endif %}
     {% if p.kraver_manuell_andamal %} · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>{% endif %}
     {% if p.matchade_datum_str %}
     <br>Transaktionsdatum: {{ p.matchade_datum_str }}
@@ -26,10 +30,12 @@
 
   {% if p.delposter %}
   <table>
-    <thead><tr><th>Församling</th><th style="text-align:right">Belopp</th><th style="text-align:right">Tx</th></tr></thead>
+    <thead><tr><th>Församling</th><th style="text-align:right">Belopp</th><th style="text-align:right">Tx</th><th></th></tr></thead>
     <tbody>
       {% for d in p.delposter %}
-      <tr><td>{{ d.forsamling }}</td><td style="text-align:right">{{ d.belopp|kr }}</td><td style="text-align:right">{{ d.antal }}</td></tr>
+      <tr><td>{{ d.forsamling }}</td><td style="text-align:right">{{ d.belopp|kr }}</td><td style="text-align:right">{{ d.antal }}</td>
+        <td>{% if d.transaktioner %}<a class="hv-swish" title="Öppna justeringar med församlingens rader förvalda"
+          href="/justeringar?fil={{ vald|urlencode }}&ov_forsamling={{ d.forsamling|urlencode }}&forval_tx={{ d.transaktioner|map(attribute='tx_id')|join(',') }}#overstyrningar">justera</a>{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

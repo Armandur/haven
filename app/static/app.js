@@ -93,6 +93,29 @@
   });
 })();
 
+// Tillfallespicker i justeringsvyn: valt kalendertillfalle fyller
+// andamal/typ/datum i samma formular. Progressiv: utan JS fylls falten fritt.
+(function () {
+  "use strict";
+  document.addEventListener("change", function (ev) {
+    var sel = ev.target;
+    if (!sel.classList || !sel.classList.contains("hv-tillfallepicker")) return;
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.dataset.andamal) return;
+    var form = sel.closest("form");
+    if (!form) return;
+    var andamal = form.querySelector("input[name='ny_andamal']");
+    var typ = form.querySelector("select[name='ny_typ']");
+    var datum = form.querySelector("input[name='ny_tillfallesdatum']");
+    if (andamal) andamal.value = opt.dataset.andamal;
+    if (typ && opt.dataset.typ) typ.value = opt.dataset.typ;
+    if (datum) {
+      datum.value = opt.dataset.datum;
+      datum.dataset.manuell = "true";   // radraknaren far inte skriva over valet
+    }
+  });
+})();
+
 // Justeringsvyn: live-filtrering av radtabeller, markera-alla-synliga och
 // lopande rakning av markerade rader + summa. Progressiv: utan JS visas alla
 // rader med kryssrutor och kan bockas manuellt.

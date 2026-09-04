@@ -1,7 +1,7 @@
 """Webbvyn: dashboard, styrd arbetsko, omatchade rader och underlagsvy."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -357,6 +357,8 @@ def justeringar(request: Request):
         key=lambda t: (t.trans_datum, t.tid or datetime.min.time())
     ) if sar_verksamhet else []
 
+    forval_tx = {t for t in (request.query_params.get("forval_tx") or "").split(",") if t}
+
     resultat = kor_avstamning(vy.resultat)
     sar_effekt = {p.sarskild_post_id: p for p in vy.resultat.underlag.gava_sarskilda}
     overstyrningar = las_overstyrningar(period)
@@ -371,8 +373,32 @@ def justeringar(request: Request):
         "avst": resultat, "sar_effekt": sar_effekt,
         "ov_forsamling": ov_forsamling, "sar_verksamhet": sar_verksamhet,
         "ov_rader": ov_rader, "sar_rader": sar_rader,
+        "forval_tx": forval_tx,
+        "ov_tillfallen": _kalendertillfallen(ov_forsamling, period),
+        "redigera_tillfallen": (
+            _kalendertillfallen(ov_redigera.forsamling, period) if ov_redigera else []
+        ),
         "historik": [(h, _historik_berorda(h, txs)) for h in las_historik(period)],
     })
+
+
+def _kalendertillfallen(forsamling: str, period: str) -> list:
+    """Kalenderrader (med andamal) for forsamlingen runt rapportperioden -
+    underlag for tillfallespickern i overstyrningsformularen. Tar med tre
+    veckor fore och nagra veckor efter manaden, sa flyttade tillfallen vid
+    manadsskiften (t.ex. gudstjanst pa lordagen fore) finns med."""
+    from app.core.ingest_kalender import las_kalender
+    kalfil = DATA_DIR / KALENDER_FIL
+    if not forsamling or not kalfil.exists():
+        return []
+    try:
+        ar, man = int(period[:4]), int(period[5:7])
+    except (TypeError, ValueError):
+        return []
+    fran = date(ar, man, 1) - timedelta(days=21)
+    till = date(ar, man, 1) + timedelta(days=52)
+    return [r for r in las_kalender(kalfil)
+            if r.forsamling == forsamling and r.andamal and fran <= r.datum <= till]
 
 
 def _historik_berorda(h, transaktioner: list):
