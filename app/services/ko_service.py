@@ -57,13 +57,10 @@ class Kopost:
     kraver_manuell_andamal: bool = False
 
     @property
-    def matchade_datum_str(self) -> str:
-        datum_list = sorted(list({t.trans_datum for t in self.transaktioner if t.trans_datum}))
-        if not datum_list:
-            return ""
-        if len(datum_list) == 1:
-            return datum_list[0].strftime("%Y-%m-%d")
-        return f"{datum_list[0].strftime('%Y-%m-%d')} till {datum_list[-1].strftime('%Y-%m-%d')}"
+    def datumfordelning(self) -> list[tuple[date, int]]:
+        """Antal transaktioner per transaktionsdatum, i datumordning."""
+        c = Counter(t.trans_datum for t in self.transaktioner if t.trans_datum)
+        return sorted(c.items())
 
     @property
     def dedupade_meddelanden(self) -> list[tuple[str, int]]:

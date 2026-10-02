@@ -18,4 +18,13 @@ def kr(varde) -> str:
     return f"{varde:,.2f}".replace(",", " ").replace(".", ",")
 
 
+_VECKODAGAR = ("mån", "tis", "ons", "tor", "fre", "lör", "sön")
+
+
+def dag(d) -> str:
+    """Datum med svensk veckodag, t.ex. '2026-09-20 sön'."""
+    return f"{d:%Y-%m-%d} {_VECKODAGAR[d.weekday()]}"
+
+
 templates.env.filters["kr"] = kr
+templates.env.filters["dag"] = dag

@@ -15,11 +15,12 @@
 
   <div class="hv-meta">
     {% if p.andamal %}Ändamål: <strong>{{ p.andamal }}</strong> · {% endif %}
-    {% if p.datum %}Tillfälle: {{ p.datum }} · {% endif %}
+    {% if p.datum %}Tillfälle: {{ p.datum|dag }} · {% endif %}
     {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
     {% if p.kraver_manuell_andamal %} · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>{% endif %}
-    {% if p.matchade_datum_str %}
-    <br>Transaktionsdatum: {{ p.matchade_datum_str }}
+    {% if p.datumfordelning %}
+    <br>Transaktionsdatum:
+    {% for d, n in p.datumfordelning %}{{ d|dag }} ({{ n }} st){{ ', ' if not loop.last }}{% endfor %}
     {% endif %}
 
   </div>
@@ -83,7 +84,7 @@
           <tbody>
             {% for t in d.transaktioner|sort(attribute='trans_datum,tid') %}
             <tr>
-              <td>{{ t.trans_datum }}</td>
+              <td>{{ t.trans_datum|dag if t.trans_datum else "" }}</td>
               <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
               <td style="text-align:right">{{ t.belopp|kr }}</td>
               <td class="hv-swish">{{ t.meddelande }}</td>
@@ -99,7 +100,7 @@
       <tbody>
         {% for t in p.transaktioner|sort(attribute='trans_datum,tid') %}
         <tr>
-          <td>{{ t.trans_datum }}</td>
+          <td>{{ t.trans_datum|dag if t.trans_datum else "" }}</td>
           <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
           <td style="text-align:right">{{ t.belopp|kr }}</td>
           <td class="hv-swish">{{ t.meddelande }}</td>
