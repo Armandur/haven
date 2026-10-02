@@ -267,6 +267,10 @@ details.hv-kvitterade summary {
 }
 .hv-post details.hv-tx table { font-size: 0.82rem; margin-top: 0.5rem; }
 .hv-post details.hv-tx td, .hv-post details.hv-tx th { padding: 0.2rem 0.4rem; }
+/* Ny transaktionsdag: tydlig linje i accentfärg ovanför första raden */
+.hv-post details.hv-tx tr.hv-nydag td { border-top: 2px solid var(--hv-accent); }
+.hv-post details.hv-tx td:first-child { white-space: nowrap; }
+.hv-litenknapp { padding: 0.25rem 0.7rem; font-size: 0.85rem; margin: 0; width: auto; }
 
 /* Uppladdnings-overlay */
 #upload-overlay {

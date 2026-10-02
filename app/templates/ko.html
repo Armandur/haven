@@ -72,7 +72,7 @@
   {% endif %}
 
   {% if p.transaktioner %}
-  <details class="hv-tx">
+  <details class="hv-tx" data-roll="tx-lista">
     <summary>Visa {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}</summary>
     {% if p.grupp == 'R/S' and p.delposter %}
       {% for d in p.delposter %}
@@ -83,7 +83,7 @@
           <thead><tr><th>Datum</th><th>Tid</th><th style="text-align:right">Belopp</th><th>Meddelande</th></tr></thead>
           <tbody>
             {% for t in d.transaktioner|sort(attribute='trans_datum,tid') %}
-            <tr>
+            <tr{% if loop.previtem is defined and loop.previtem.trans_datum != t.trans_datum %} class="hv-nydag"{% endif %}>
               <td>{{ t.trans_datum|dag if t.trans_datum else "" }}</td>
               <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
               <td style="text-align:right">{{ t.belopp|kr }}</td>
@@ -99,7 +99,7 @@
       <thead><tr><th>Datum</th><th>Tid</th><th style="text-align:right">Belopp</th><th>Meddelande</th></tr></thead>
       <tbody>
         {% for t in p.transaktioner|sort(attribute='trans_datum,tid') %}
-        <tr>
+        <tr{% if loop.previtem is defined and loop.previtem.trans_datum != t.trans_datum %} class="hv-nydag"{% endif %}>
           <td>{{ t.trans_datum|dag if t.trans_datum else "" }}</td>
           <td>{{ t.tid.strftime('%H:%M') if t.tid else '' }}</td>
           <td style="text-align:right">{{ t.belopp|kr }}</td>
@@ -170,9 +170,12 @@
       <label for="tab-koll">Kollekter <span class="hv-tabnr"><span data-roll="koll-klara">{{ vy.kollekt_klara }}</span>/{{ vy.kollekt_antal }}</span></label>
       <label for="tab-gava">Insamlingar/Gåvor <span class="hv-tabnr"><span data-roll="gava-klara">{{ vy.gava_klara }}</span>/{{ vy.gava_antal }}</span></label>
     </div>
-    <label style="margin: 0; font-size: 0.9em;">
-      <input type="checkbox" id="filter-ejreg"> Visa endast ej registrerade
-    </label>
+    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <button type="button" id="tx-alla" class="secondary outline hv-litenknapp">Fäll ut alla transaktioner</button>
+      <label style="margin: 0; font-size: 0.9em;">
+        <input type="checkbox" id="filter-ejreg"> Visa endast ej registrerade
+      </label>
+    </div>
   </div>
 
   <div class="hv-panel hv-panel-koll">
@@ -203,6 +206,15 @@
 </style>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
+    var txKnapp = document.getElementById("tx-alla");
+    if (txKnapp) {
+      txKnapp.addEventListener("click", function() {
+        var listor = document.querySelectorAll('details[data-roll="tx-lista"]');
+        var oppna = Array.prototype.some.call(listor, function(d) { return !d.open; });
+        listor.forEach(function(d) { d.open = oppna; });
+        txKnapp.textContent = oppna ? "Fäll ihop alla transaktioner" : "Fäll ut alla transaktioner";
+      });
+    }
     var cb = document.getElementById("filter-ejreg");
     if (cb) {
       cb.addEventListener("change", function(e) {
