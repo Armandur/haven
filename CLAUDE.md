@@ -94,7 +94,7 @@ INTE i DB - Excel-filen är sanningskälla (fastställt beslut).
 
 ## Köra
 
-Se README.md. CLI: `uv run cli.py <swishfil>`. Test: `uv run --with pytest pytest`.
+Se README.md. CLI: `uv run cli.py <swishfil>`. Test: `uv run pytest`.
 
 ## Dev-serverflöde (stående instruktion från Rasmus)
 

@@ -67,7 +67,7 @@ Nås över Tailscale i homelabben. Se `.env.example` för konfiguration.
 ### Tester
 
 ```
-uv run --with pytest pytest
+uv run pytest
 ```
 
 Facit-testet i `tests/test_maj2026.py` låser maj 2026-siffrorna och hoppas över
