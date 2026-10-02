@@ -18,12 +18,29 @@
     {% if p.datum %}Tillfälle: {{ p.datum|dag }} · {% endif %}
     {{ p.antal }} transaktion{{ '' if p.antal == 1 else 'er' }}
     {% if p.kraver_manuell_andamal %} · <span class="hv-badge varning">ändamål sätts manuellt (Fas 1)</span>{% endif %}
-    {% if p.datumfordelning %}
+    {% set fd = p.datumfordelning %}
+    {% if fd|length > 3 %}
+    <br>Transaktionsdatum: {{ fd|length }} dagar, {{ fd[0][0]|dag }} till {{ fd[-1][0]|dag }}
+    {% elif fd %}
     <br>Transaktionsdatum:
-    {% for d, n in p.datumfordelning %}{{ d|dag }} ({{ n }} st){{ ', ' if not loop.last }}{% endfor %}
+    {% for d, n in fd %}{{ d|dag }} ({{ n }} st){{ ', ' if not loop.last }}{% endfor %}
     {% endif %}
 
   </div>
+
+  {% if fd|length > 3 %}
+  <details class="hv-tx">
+    <summary>Visa antal per dag ({{ fd|length }} dagar)</summary>
+    <table class="hv-radtabell" style="width: auto; margin-top: 0.5rem; margin-bottom: 1rem;">
+      <thead><tr><th>Datum</th><th style="text-align:right">Antal</th></tr></thead>
+      <tbody>
+        {% for d, n in fd %}
+        <tr><td>{{ d|dag }}</td><td style="text-align:right">{{ n }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
 
   {% if p.delposter %}
   <table>
